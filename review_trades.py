@@ -8,6 +8,7 @@ import os
 from trade_counter import connect_imap
 import yfinance as yf
 pd.options.mode.chained_assignment = None  # default='warn'
+from credentials import export_folder
 
 # Todo
 # Fix the bug where if you run the script after doing a trade on T, and then do more trades, in the future the script will not pull all the trades,
@@ -18,7 +19,7 @@ pd.options.mode.chained_assignment = None  # default='warn'
 
 START_DATE = datetime(2023, 1, 1)
 MIN_SCALP = 100
-EXPORT_FOLDER = r"C:\Users\jacks\Desktop\code\exports"
+
 
 def store_trades(start_date = START_DATE, all_trades = None, file_location = None):
     if file_location is None:
@@ -342,7 +343,7 @@ def get_ticker_trades(all_trades = None):
 
 
 if __name__ in "__main__":
-    file_location = EXPORT_FOLDER
+    file_location = export_folder
 
     # perform all the analytics
     all_trades = find_trades(file_location)
