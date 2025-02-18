@@ -251,7 +251,7 @@ def exposure_breakdown(open_summary = None):
         "ASPI": ["US", 3],
         "SOFR3": ["DV01", 1],
         "NVDA" : ["US", 1.5],
-        "SGOV": ["USD funding", -1],
+        "SGOV": ["MM fund", 1],
     }
 
     open_summary["exposure"] = open_summary.apply(lambda x: exposure_table.get(x.ticker.split()[0])[0], axis=1)
