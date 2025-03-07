@@ -35,7 +35,9 @@ def store_trades(start_date = START_DATE, all_trades = None, file_location = Non
         "MES" : 5,
         "M2K" : 5,
         "MNQ" : 2,
-        "SOFR3" : 2500
+        "SOFR3" : 2500,
+        "GBS" : 1100,
+        "UC" : 100000,
     }
     imap = connect_imap()
     imap.select('Inbox')
@@ -249,9 +251,15 @@ def exposure_breakdown(open_summary = None):
         "SMCI": ["US", 2],
         "TCEHY": ["CH", 1],
         "ASPI": ["US", 3],
-        "SOFR3": ["DV01", 1],
+        "SOFR3": ["DV01", 1/10000],
+        "GBS" : ["DV01", 1.86/10000],
         "NVDA" : ["US", 1.5],
         "SGOV": ["MM fund", 1],
+        "SPY" : ["US", 1],
+        "VOO": ["US", 1],
+        "QQQ": ["US", 1.3],
+        "QQQM": ["US", 1.3],
+        "UC" : ["USDCNH", 1],
     }
 
     open_summary["exposure"] = open_summary.apply(lambda x: exposure_table.get(x.ticker.split()[0])[0], axis=1)
