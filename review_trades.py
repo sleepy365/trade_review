@@ -12,7 +12,7 @@ from credentials import export_folder
 
 # Todo
 # Fix the bug where if you run the script after doing a trade on T, and then do more trades, in the future the script will not pull all the trades,
-# basically the script misses trades if you make a trade AFTER the script already found trades for the day
+# basically the script misses trades if you make a trade AFTER the script already found trades for the day, fix is to delete t date trades and refind
 
 
 # Set Variables
@@ -25,6 +25,10 @@ def store_trades(start_date = START_DATE, all_trades = None, file_location = Non
     if file_location is None:
         print("No file location")
         return "0"
+    currency_table = {
+        "EURUSD" : 1.09,
+        "USDCNH" : 7.23,
+    }
     contract_size_table = {
         "ZT" : 2000,
         "ZF": 1000,
@@ -36,8 +40,8 @@ def store_trades(start_date = START_DATE, all_trades = None, file_location = Non
         "M2K" : 5,
         "MNQ" : 2,
         "SOFR3" : 2500,
-        "GBS" : 1100,
-        "UC" : 100000,
+        "GBS" : 1000*currency_table["EURUSD"],
+        "UC" : 100000/currency_table["USDCNH"],
     }
     imap = connect_imap()
     imap.select('Inbox')
@@ -282,7 +286,11 @@ def exposure_breakdown(open_summary = None):
     return exposure_df
 
 def get_last_price(ticker = None):
-    # return the most recent closing price of us stock
+    # return the most recent closing price of us stock or future
+    # pass for futures
+    if " " in ticker:
+        print(f" {ticker} is likely a future, defaulting to open_price")
+        return None
     try:
         stock_data = yf.download(ticker, period = "7d", auto_adjust=True)
         return stock_data.tail(1)["Close"].values[0][0]
