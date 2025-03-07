@@ -288,9 +288,16 @@ def exposure_breakdown(open_summary = None):
 def get_last_price(ticker = None):
     # return the most recent closing price of us stock or future
     # pass for futures
+    ib_yf_mapping = {
+        "GBS" : "FGBS=F",
+    }
     if " " in ticker:
-        print(f" {ticker} is likely a future, defaulting to open_price")
-        return None
+        ticker_split = ticker.split()[0]
+        if ticker_split in ib_yf_mapping.keys():
+            ticker = ib_yf_mapping[ticker_split]
+        else:
+            print(f"Future not resolved for {ticker}, defaulting to open_price")
+            return None
     try:
         stock_data = yf.download(ticker, period = "7d", auto_adjust=True)
         return stock_data.tail(1)["Close"].values[0][0]
