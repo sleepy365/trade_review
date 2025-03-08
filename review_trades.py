@@ -303,6 +303,11 @@ def get_last_price(ticker = None):
 
 def get_ticker_trades(all_trades = None, ticker = None):
     unique_tickers = all_trades["ticker"].unique()
+    # first try to resolve the ticker
+    if " " not in ticker:
+        # ticker is a stock so make it all upper case
+        ticker = ticker.upper()
+
 
     if ticker in unique_tickers:
         temp = all_trades[all_trades["ticker"] == ticker]
@@ -331,7 +336,7 @@ def get_ticker_trades(all_trades = None, ticker = None):
                     temp_last_price = round(ticker_px, 2)
                 else:
                     temp_last_price = temp_labeled.loc[0, "price"]
-                temp_open_pl = round(np.sign(temp_open_quantity) * temp_open_notional * ((ticker_px / temp_open_price)-1), 2)
+                temp_open_pl = round(np.sign(temp_open_quantity) * temp_open_notional * ((temp_last_price / temp_open_price)-1), 2)
                 print(f"\nTotal Open PL is {temp_open_pl}\n"
                     f"Total Scalp PL is {temp_scalp_pnl}")
             if i == 0:
@@ -350,7 +355,7 @@ def get_ticker_trades(all_trades = None, ticker = None):
             else:
                 temp_last_price = temp_labeled.loc[0, "price"]
             temp_open_pl = round(
-                np.sign(temp_open_quantity) * temp_open_notional * ((ticker_px / temp_open_price) - 1), 2)
+                np.sign(temp_open_quantity) * temp_open_notional * ((temp_last_price / temp_open_price) - 1), 2)
             print(f"\nTotal Open PL is {temp_open_pl}\n")
     else:
         print("Ticker not in unique tickers")
@@ -360,15 +365,16 @@ def get_ticker_trades(all_trades = None, ticker = None):
 def other_functions(all_trades = None, file_location = None):
     # at the end of the routine ask the user for other things that they may want to do
     unique_tickers = all_trades["ticker"].unique()
-    print(unique_tickers)
+
 
     function_loop = True
     while function_loop:
+        print(unique_tickers)
         ticker_input = input(
             "Type ticker to see trades. e.g NVDA\n"
             "Other functions:\n"
             "\t1 to wipe the most recent day of recorded trades\n"
-        ).upper()
+        )
         if ticker_input == "":
             function_loop = False
         elif ticker_input == "1":
