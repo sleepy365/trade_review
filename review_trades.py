@@ -6,13 +6,16 @@ import pandas as pd
 import numpy as np
 import os
 from trade_counter import connect_imap
+from credentials import export_folder
 import yfinance as yf
 pd.options.mode.chained_assignment = None  # default='warn'
-from credentials import export_folder
+
+
+# Known Issues
+# if you make a trade AFTER the script already found trades for the same day, it will miss trades. Wipe recent day trades to fix this
 
 # Todo
-# Fix the bug where if you run the script after doing a trade on T, and then do more trades, in the future the script will not pull all the trades,
-# basically the script misses trades if you make a trade AFTER the script already found trades for the day, fix is to delete t date trades and refind
+# how to make the script detect if it is missing trades without looping through all trades in the past?
 
 
 # Set Variables
@@ -97,10 +100,7 @@ def store_trades(start_date = START_DATE, all_trades = None, file_location = Non
 def find_trades(file_location):
     if os.path.isfile(file_location+r"\all_trades.csv"):
         all_trades = pd.read_csv(file_location+r"\all_trades.csv")
-        try:
-            last_trade_date = datetime.strptime(all_trades.date_short.iloc[0],"%Y/%m/%d")
-        except ValueError:
-            last_trade_date = datetime.strptime(all_trades.date_short.iloc[0], "%d/%m/%Y")
+        last_trade_date = datetime.strptime(all_trades.date_short.iloc[0],"%Y/%m/%d")
         num_trades = len(all_trades)
         print(f"trade database found with {num_trades} trades up to {last_trade_date}\n"
               f"Checking for new trades")
@@ -183,6 +183,8 @@ def analyse_trades(all_trades = None):
     # sort open_df by notional traded and closed trades by absolute PL
     open_df = open_df.sort_values(by = "open_notional", ignore_index = True, ascending = False)
     open_df["open_pnl"] = round(np.sign(open_df["open_quantity"]) * open_df["open_notional"] * ((open_df["last_price"] / open_df["open_price"])-1), 2)
+    print(open_df.columns)
+
     close_df["abs_scalp_pnl"] = abs(close_df["scalp_pnl"])
     close_df = close_df.sort_values(by="abs_scalp_pnl", ignore_index=True, ascending=False)
     close_df = close_df[close_df["abs_scalp_pnl"] >= MIN_SCALP]
@@ -190,14 +192,14 @@ def analyse_trades(all_trades = None):
 
     # exposure breakdown of open trades
     exposure_df = exposure_breakdown(open_df)
+    open_df = open_df.drop(columns = ["open_notional"])
 
     open_df.to_csv(file_location + r"\open_summary.csv", index=False)
     close_df.to_csv(file_location + r"\scalp_summary.csv", index=False)
 
     print(open_df, f"\nTotal Open PL is {round(open_df["open_pnl"].sum(), 1)}\n"
                    f"Total Scalp PL is {round(close_df["scalp_pnl"].sum(), 1)}")
-    if input("type y to see exposure breakdown ?\n").lower() == "y":
-        print(exposure_df)
+    print(exposure_df)
     if input("type y to see scalp breakdown ?\n").lower() == "y":
         print(close_df, f"\nTotal Scalp PL is {round(close_df["scalp_pnl"].sum(), 1)}")
     return
@@ -244,9 +246,10 @@ def manual_trades(file_location):
     return
 
 
-def exposure_breakdown(open_summary = None):
+def exposure_breakdown(df = None):
     # a nice learning point from this line is that direct assignment of dataframes in python does not create a new dataframe,
     # it actually passes the underlying objects of the initial dataframe into the new object
+    open_summary = df.copy()
     exposure_table = {
         "AMD" : ["US", 1.5],
         "ARM": ["US", 1.5],
@@ -305,64 +308,92 @@ def get_last_price(ticker = None):
         print(f"Something went wrong with finding last price for {ticker}, defaulting to open_price")
         return None
 
-def get_ticker_trades(all_trades = None):
+def get_ticker_trades(all_trades = None, ticker = None):
     unique_tickers = all_trades["ticker"].unique()
-    print(unique_tickers)
-    ticker_loop = True
-    while ticker_loop:
-        ticker = input("Type ticker to see trades:\n").upper()
-        if ticker in unique_tickers:
-            temp = all_trades[all_trades["ticker"] == ticker]
-            temp_labeled = label_trades(temp)
-            print(temp_labeled)
-            contract_size = temp_labeled.loc[0, "contract_size"]
-            # check if position has been closed
-            trade_closed = False
-            if 'close' in temp_labeled["flag"].values:
-                trade_closed = True
-                i = temp_labeled[temp_labeled["flag"] == "close"].index[0]
 
-                temp_open = temp_labeled.loc[:i - 1, ]
-                temp_close = temp_labeled.loc[i:, ]
+    if ticker in unique_tickers:
+        temp = all_trades[all_trades["ticker"] == ticker]
+        temp_labeled = label_trades(temp)
+        print(temp_labeled)
+        contract_size = temp_labeled.loc[0, "contract_size"]
+        # check if position has been closed
+        trade_closed = False
+        if 'close' in temp_labeled["flag"].values:
+            trade_closed = True
+            i = temp_labeled[temp_labeled["flag"] == "close"].index[0]
 
-                # analyse close trades
-                temp_scalp_pnl = round(-sum(temp_close["quantity"] * temp_close["price"]) * contract_size, 2)
+            temp_open = temp_labeled.loc[:i - 1, ]
+            temp_close = temp_labeled.loc[i:, ]
 
-                # if i != 0, it means there is some open position
-                if i != 0:
-                    temp_open_quantity = temp_open.quantity.sum()
-                    temp_open_price = sum(temp_open["quantity"] * temp_open["price"]) / temp_open_quantity
-                    temp_open_notional = round(abs(temp_open_price * temp_open_quantity * contract_size), 0)
-                    ticker_px = get_last_price(ticker)
-                    if ticker_px is not None:
-                        temp_last_price = round(ticker_px, 2)
-                    else:
-                        temp_last_price = temp_labeled.loc[0, "price"]
-                    temp_open_pl = round(np.sign(temp_open_quantity) * temp_open_notional * ((ticker_px / temp_open_price)-1), 2)
-                    print(f"\nTotal Open PL is {temp_open_pl}\n"
-                        f"Total Scalp PL is {temp_scalp_pnl}")
-                if i == 0:
-                    print(f"Total Scalp PL is {temp_scalp_pnl}")
+            # analyse close trades
+            temp_scalp_pnl = round(-sum(temp_close["quantity"] * temp_close["price"]) * contract_size, 2)
 
-            # there is only open position
-            else:
-                # analyse open trades
-                temp_open_quantity = temp_labeled.quantity.sum()
-                temp_open_price = round(sum(temp_labeled["quantity"] * temp_labeled["price"]) / temp_open_quantity, 4)
-
+            # if i != 0, it means there is some open position
+            if i != 0:
+                temp_open_quantity = temp_open.quantity.sum()
+                temp_open_price = sum(temp_open["quantity"] * temp_open["price"]) / temp_open_quantity
                 temp_open_notional = round(abs(temp_open_price * temp_open_quantity * contract_size), 0)
                 ticker_px = get_last_price(ticker)
                 if ticker_px is not None:
                     temp_last_price = round(ticker_px, 2)
                 else:
                     temp_last_price = temp_labeled.loc[0, "price"]
-                temp_open_pl = round(
-                    np.sign(temp_open_quantity) * temp_open_notional * ((ticker_px / temp_open_price) - 1), 2)
-                print(f"\nTotal Open PL is {temp_open_pl}\n")
+                temp_open_pl = round(np.sign(temp_open_quantity) * temp_open_notional * ((ticker_px / temp_open_price)-1), 2)
+                print(f"\nTotal Open PL is {temp_open_pl}\n"
+                    f"Total Scalp PL is {temp_scalp_pnl}")
+            if i == 0:
+                print(f"Total Scalp PL is {temp_scalp_pnl}")
 
+        # there is only open position
         else:
-            ticker_loop = False
+            # analyse open trades
+            temp_open_quantity = temp_labeled.quantity.sum()
+            temp_open_price = round(sum(temp_labeled["quantity"] * temp_labeled["price"]) / temp_open_quantity, 4)
+
+            temp_open_notional = round(abs(temp_open_price * temp_open_quantity * contract_size), 0)
+            ticker_px = get_last_price(ticker)
+            if ticker_px is not None:
+                temp_last_price = round(ticker_px, 2)
+            else:
+                temp_last_price = temp_labeled.loc[0, "price"]
+            temp_open_pl = round(
+                np.sign(temp_open_quantity) * temp_open_notional * ((ticker_px / temp_open_price) - 1), 2)
+            print(f"\nTotal Open PL is {temp_open_pl}\n")
+    else:
+        print("Ticker not in unique tickers")
     return
+
+
+def other_functions(all_trades = None, file_location = None):
+    # at the end of the routine ask the user for other things that they may want to do
+    unique_tickers = all_trades["ticker"].unique()
+    print(unique_tickers)
+
+    function_loop = True
+    while function_loop:
+        ticker_input = input(
+            "Type ticker to see trades. e.g NVDA\n"
+            "Other functions:\n"
+            "\t1 to wipe the most recent day of recorded trades\n"
+        ).upper()
+        if ticker_input == "":
+            function_loop = False
+        elif ticker_input == "1":
+            last_trade_date = all_trades.date_short.iloc[0]
+            all_trades = all_trades[all_trades["date_short"] != last_trade_date].reset_index(drop = True)
+            print("new trade database looks like this")
+            print(all_trades.head(10))
+            all_trades.to_csv(file_location + r"\all_trades.csv", index=False)
+            all_trades.to_csv(
+                file_location + r"\backups\all_trades" + f"{datetime.now().strftime("%Y_%m_%d")}" + ".csv", index=False)
+            function_loop = False
+        else:
+            get_ticker_trades(all_trades, ticker_input)
+    print("trade review finished, exiting.")
+    return
+
+
+
 
 
 if __name__ in "__main__":
@@ -372,7 +403,8 @@ if __name__ in "__main__":
     all_trades = find_trades(file_location)
     manual_trades(file_location)
     analyse_trades(all_trades)
-    get_ticker_trades(all_trades)
+    other_functions(all_trades, file_location)
+
 
 
 
