@@ -11,3 +11,6 @@ recording for personal wealth management. It achieves the following:
 3. create credentials.py in the same format as credentials_template.py
 4. run trade_counter.py
 5. if all works, try run review_trades.py
+
+# Known Issues
+1. if you make a trade AFTER the script already found trades for the same day, it will miss the new trades. Solution is to use the other functions to wipe recent day trades and rerun

@@ -11,13 +11,6 @@ import yfinance as yf
 pd.options.mode.chained_assignment = None  # default='warn'
 
 
-# Known Issues
-# if you make a trade AFTER the script already found trades for the same day, it will miss trades. Wipe recent day trades to fix this
-
-# Todo
-# how to make the script detect if it is missing trades without looping through all trades in the past?
-
-
 # Set Variables
 
 START_DATE = datetime(2023, 1, 1)
