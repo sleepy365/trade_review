@@ -1,7 +1,7 @@
 import imaplib
 import email
 from datetime import datetime, timedelta
-import calendar
+import calendar, pytz
 import pandas as pd
 import numpy as np
 import os
@@ -49,17 +49,19 @@ def store_trades(start_date = START_DATE, all_trades = None, file_location = Non
     id_list.reverse()
     for id in id_list:
         result, data = imap.fetch(id, '(RFC822)')
-        raw_email = data[0][1]  # Returns a byte
         msg = email.message_from_string(data[0][1].decode('utf-8'))
-        date_tuple = email.utils.parsedate_tz(msg['Date'])
-        date_short = f'{date_tuple[0]}/{date_tuple[1]}/{date_tuple[2]}'
-        # date_obj has no information about hour and minutes, if want to add the precision might create a bug
-        date_obj = datetime.strptime(date_short, "%Y/%m/%d")
+
+
+        # remove the english of timezone to input into timezone aware datetime object
+        new_msg = " ".join(msg['Date'].split(" ")[:-1])
+        date_long = datetime.strptime(new_msg, "%a, %d %b %Y %H:%M:%S %z")
+        date_long = date_long.astimezone(pytz.timezone("Asia/Hong_Kong"))
+
         subject = str(email.header.make_header(email.header.decode_header(msg['Subject'])))
-        if date_obj < start_date:
+        if datetime(date_long.year, date_long.month, date_long.day) < start_date:
             break
         # create the trade item
-        print(date_short, subject)
+        print(date_long, subject)
         subject_split = subject.split()
         quantity = round((1 if subject_split[0] == "BOUGHT" else -1) * float(subject_split[1].replace(",","")),0)
         ticker = ''
@@ -71,7 +73,7 @@ def store_trades(start_date = START_DATE, all_trades = None, file_location = Non
         else:
             contract_size = 1
         trade = pd.DataFrame({
-            "date_short": [date_short],
+            "date_short": [date_long.strftime("%Y/%m/%d")],
             "ticker": [ticker],
             "quantity": [quantity],
             "price": [float(subject_split[subject_split.index("@") + 1])],
