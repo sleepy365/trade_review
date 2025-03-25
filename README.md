@@ -5,6 +5,10 @@ recording for personal wealth management. It achieves the following:
 2. stores trade confirmations into a trade database which can be accessed
 3. analyse the trade database for monthly trade counter, exposure management, position management, PL breakdowns, and trades by ticker
 
+# trade_counter
+Script that pulls trade confirmations from IBKR and presents timestamps and trade content. This tool counts the number executed 
+orders in the current month, removing multiple fills originating from the same order.
+
 # Set up
 1. Setup IMAP for gmail and increase the # Msgs to 1000+ (default is  100)
 2. install python 3.1 for this project
