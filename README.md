@@ -10,7 +10,7 @@ Script that pulls trade confirmations from IBKR and presents timestamps and trad
 orders in the current month, removing multiple fills originating from the same order.
 
 # Set up
-1. Setup IMAP for gmail and increase the # Msgs to 1000+ (default is  100)
+1. Setup IMAP for gmail and change the "Folder Size Limits" in IMAP access to unlimited (default is  1000)
 2. install python 3.1 for this project
 3. create credentials.py in the same format as credentials_template.py
 4. run trade_counter.py

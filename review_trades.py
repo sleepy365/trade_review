@@ -287,18 +287,23 @@ def get_last_price(ticker = None):
     # return the most recent closing price of us stock or future
     # pass for futures
     ib_yf_mapping = {
-        "GBS" : "FGBS=F",
+        # "ticker" : ["yfinance=F", carry rate, expiry date]
+        "UC Jun'25" : ["USDCNH=X" , -0.022, "2025/6/16"]
     }
+    compound_factor = 1 # for stocks, we can simply take the last price
+
     if " " in ticker:
-        ticker_split = ticker.split()[0]
-        if ticker_split in ib_yf_mapping.keys():
-            ticker = ib_yf_mapping[ticker_split]
+        ticker_key =  ticker.split()[0] + " " + ticker.split()[1]
+        if ticker_key in ib_yf_mapping.keys():
+            ticker = ib_yf_mapping[ticker_key][0]
+            days_to_expiry = (datetime.strptime(ib_yf_mapping[ticker_key][2], "%Y/%m/%d") - datetime.now()).days
+            compound_factor = (1+ib_yf_mapping[ticker_key][1]/365)**days_to_expiry
         else:
             print(f"Future not resolved for {ticker}, defaulting to open_price")
             return None
     try:
         stock_data = yf.download(ticker, period = "7d", auto_adjust=True)
-        return stock_data.tail(1)["Close"].values[0][0]
+        return stock_data.tail(1)["Close"].values[0][0]*compound_factor
     except:
         print(f"Something went wrong with finding last price for {ticker}, defaulting to open_price")
         return None
