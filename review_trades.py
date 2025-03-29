@@ -115,7 +115,7 @@ def analyse_trades(all_trades = None):
     exclusion_list = ["USD.HKD", "AUD.USD", "EUR.USD", "USD.CNH"]
     tickers = [ticker for ticker in tickers if ticker not in exclusion_list]
     open_tickers, open_quantity, open_price, open_notional, last_price = [],[],[],[],[]
-    close_tickers, scalp_pnl, close_date = [],[],[]
+    close_tickers, scalp_pnl, close_date, close_trades = [],[],[],[]
     for ticker in tickers:
         temp = all_trades[all_trades.ticker == ticker].reset_index(drop=True)
         temp_labeled = label_trades(temp)
@@ -131,6 +131,7 @@ def analyse_trades(all_trades = None):
             # analyse close trades
             pnl = round(-sum(temp_close["quantity"] * temp_close["price"])*contract_size,2)
             close_tickers.append(ticker)
+            close_trades.append(len(temp_close))
             scalp_pnl.append(pnl)
 
             # if i != 0, it means there is some open position
@@ -174,6 +175,7 @@ def analyse_trades(all_trades = None):
         {'tickers' : close_tickers,
          'scalp_pnl' : scalp_pnl,
          'date_closed' : close_date,
+         'num_trades': close_trades,
          }
     )
     # sort open_df by notional traded and closed trades by absolute PL
@@ -195,8 +197,7 @@ def analyse_trades(all_trades = None):
     print(open_df, f"\nTotal Open PL is {round(open_df["open_pnl"].sum(), 1)}\n"
                    f"Total Scalp PL is {round(close_df["scalp_pnl"].sum(), 1)}")
     print(exposure_df)
-    if input("type y to see scalp breakdown ?\n").lower() == "y":
-        print(close_df, f"\nTotal Scalp PL is {round(close_df["scalp_pnl"].sum(), 1)}")
+    print("-----------------------------------------------------------\n")
     return
 
 
@@ -381,8 +382,6 @@ def ticker_history(all_trades = None):
 
 
 
-
-
 def other_functions(all_trades = None, file_location = None):
     # at the end of the routine ask the user for other things that they may want to do
     unique_tickers = all_trades["ticker"].unique()
@@ -393,12 +392,22 @@ def other_functions(all_trades = None, file_location = None):
         ticker_input = input(
             "Type ticker to see trades. e.g NVDA\n"
             "Other functions:\n"
-            "\t1 to wipe the most recent day of recorded trades\n"
+            "\t1 to see scalp summary\n"
             "\t2 to see history of tickers traded\n"
+            "\t3 to wipe the most recent day of recorded trades\n"
         )
+        # no command was given so exit
         if ticker_input == "":
             function_loop = False
+       # show scalp summary
         elif ticker_input == "1":
+            close_df = pd.read_csv(file_location+r"\scalp_summary.csv")
+            print(close_df, f"\nTotal Scalp PL is {round(close_df["scalp_pnl"].sum(), 1)}")
+        # show ticker history
+        elif ticker_input == "2":
+            ticker_history(all_trades)
+        # delete most recent day of recorded trades to repull correct trades on next script launch
+        elif ticker_input == "3":
             last_trade_date = all_trades.date_short.iloc[0]
             all_trades = all_trades[all_trades["date_short"] != last_trade_date].reset_index(drop = True)
             print("new trade database looks like this")
@@ -407,8 +416,7 @@ def other_functions(all_trades = None, file_location = None):
             all_trades.to_csv(
                 file_location + r"\backups\all_trades" + f"{datetime.now().strftime("%Y_%m_%d")}" + ".csv", index=False)
             function_loop = False
-        elif ticker_input == "2":
-            ticker_history(all_trades)
+        # show trades associated with the inputed ticker
         else:
             get_ticker_trades(all_trades, ticker_input)
     print("trade review finished, exiting.")
