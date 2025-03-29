@@ -12,7 +12,7 @@ def connect_imap():
     imap.login(imap_user, imap_pass)
     return imap
 
-if __name__ in "__main__":
+def count_trades():
     # look for trades After current month
     current_month = datetime.now().month
     current_year = datetime.now().year
@@ -50,3 +50,5 @@ if __name__ in "__main__":
             unique_trades+=1
         last_price,last_ticker, last_date = float(subject_split[subject_split.index("@") + 1]), subject_split[2], date_long.date()
         num_trades+=1
+if __name__ in "__main__":
+    count_trades()

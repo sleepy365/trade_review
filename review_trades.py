@@ -5,7 +5,7 @@ import calendar, pytz
 import pandas as pd
 import numpy as np
 import os
-from trade_counter import connect_imap
+from trade_counter import connect_imap, count_trades
 from credentials import export_folder
 import yfinance as yf
 pd.options.mode.chained_assignment = None  # default='warn'
@@ -392,22 +392,26 @@ def other_functions(all_trades = None, file_location = None):
         ticker_input = input(
             "Type ticker to see trades. e.g NVDA\n"
             "Other functions:\n"
-            "\t1 to see scalp summary\n"
-            "\t2 to see history of tickers traded\n"
-            "\t3 to wipe the most recent day of recorded trades\n"
+            "\t1 to count trades in the current month\n"
+            "\t2 to see scalp summary\n"
+            "\t3 to see history of tickers traded\n"
+            "\t4 to wipe the most recent day of recorded trades\n"
         )
         # no command was given so exit
         if ticker_input == "":
             function_loop = False
-       # show scalp summary
+        # count trades
         elif ticker_input == "1":
+            count_trades()
+        # show scalp summary
+        elif ticker_input == "2":
             close_df = pd.read_csv(file_location+r"\scalp_summary.csv")
             print(close_df, f"\nTotal Scalp PL is {round(close_df["scalp_pnl"].sum(), 1)}")
         # show ticker history
-        elif ticker_input == "2":
+        elif ticker_input == "3":
             ticker_history(all_trades)
         # delete most recent day of recorded trades to repull correct trades on next script launch
-        elif ticker_input == "3":
+        elif ticker_input == "4":
             last_trade_date = all_trades.date_short.iloc[0]
             all_trades = all_trades[all_trades["date_short"] != last_trade_date].reset_index(drop = True)
             print("new trade database looks like this")
