@@ -380,8 +380,6 @@ def ticker_history(all_trades = None):
     print(df.groupby([df.index.year, df.index.month])["ticker"].unique())
 
 
-
-
 def other_functions(all_trades = None, file_location = None):
     # at the end of the routine ask the user for other things that they may want to do
     unique_tickers = all_trades["ticker"].unique()
@@ -425,9 +423,6 @@ def other_functions(all_trades = None, file_location = None):
             get_ticker_trades(all_trades, ticker_input)
     print("trade review finished, exiting.")
     return
-
-
-
 
 
 if __name__ in "__main__":
