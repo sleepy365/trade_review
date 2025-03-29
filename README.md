@@ -1,6 +1,6 @@
 # trade_review 
-Script that pulls trade confirmations from IBKR, stores them and analyses them. I made this project to for better trade
-recording for personal wealth management. It achieves the following:
+Script that pulls trade confirmations from IBKR, stores them and analyses them. I started this project for better trade
+recording for personal wealth management and to resolve the limitations of the IBKR GUI. It achieves the following:
 1. Queries trade confirmations from IBKR which get sent to my gmail
 2. Stores trade confirmations into a trade database which can be accessed, and backed up.
 3. Portfolio analysis for exposure management, position management, open positon PL, scalp PL breakdowns, and trades by ticker
