@@ -27,7 +27,7 @@ def store_trades(start_date = START_DATE, all_trades = None, file_location = Non
         "USDCNH" : 7.23,
     }
     contract_size_table = {
-        "ZT" : 2000,
+        "ZT": 2000,
         "ZF": 1000,
         "ZN": 1000,
         "TN": 1000,
@@ -263,6 +263,12 @@ def exposure_breakdown(df = None):
         "QQQ": ["US", 1.3],
         "QQQM": ["US", 1.3],
         "UC" : ["USDCNH", 1],
+        "ZT": ["DV01", 1.8/10000],
+        "ZF": ["DV01", 3.8/10000],
+        "ZN": ["DV01", 5.8/10000],
+        "TN": ["DV01", 7.7/10000],
+        "ZB": ["DV01", 10.8/10000],
+        "UB": ["DV01", 16.2/10000],
     }
 
     open_summary["exposure"] = open_summary.apply(lambda x: exposure_table.get(x.ticker.split()[0])[0], axis=1)
@@ -289,7 +295,13 @@ def get_last_price(ticker = None):
     # pass for futures
     ib_yf_mapping = {
         # "ticker" : ["yfinance=F", carry rate, expiry date]
-        "UC Jun'25" : ["USDCNH=X" , -0.022, "2025/6/16"]
+        "UC Jun'25": ["USDCNH=X" , -0.022, "2025/6/16"],
+        "ZT Jun'25": ["ZT=F"],
+        "ZF Jun'25": ["ZF=F"],
+        "ZN Jun'25": ["ZN=F"],
+        "TN Jun'25": ["TM=F"],
+        "ZB Jun'25": ["ZB=F"],
+        "UB Jun'25": ["UB=F"],
     }
     compound_factor = 1 # for stocks, we can simply take the last price
 
@@ -297,8 +309,9 @@ def get_last_price(ticker = None):
         ticker_key =  ticker.split()[0] + " " + ticker.split()[1]
         if ticker_key in ib_yf_mapping.keys():
             ticker = ib_yf_mapping[ticker_key][0]
-            days_to_expiry = (datetime.strptime(ib_yf_mapping[ticker_key][2], "%Y/%m/%d") - datetime.now()).days
-            compound_factor = (1+ib_yf_mapping[ticker_key][1]/365)**days_to_expiry
+            if len(ib_yf_mapping[ticker_key]) == 3:
+                days_to_expiry = (datetime.strptime(ib_yf_mapping[ticker_key][2], "%Y/%m/%d") - datetime.now()).days
+                compound_factor = (1+ib_yf_mapping[ticker_key][1]/365)**days_to_expiry
         else:
             print(f"Future not resolved for {ticker}, defaulting to open_price")
             return None
