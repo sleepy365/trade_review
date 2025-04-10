@@ -376,8 +376,7 @@ def get_ticker_trades(all_trades = None, ticker = None):
                 temp_last_price = round(ticker_px, 2)
             else:
                 temp_last_price = temp_labeled.loc[0, "price"]
-            temp_open_pl = round(
-                np.sign(temp_open_quantity) * temp_open_notional * ((temp_last_price / temp_open_price) - 1), 2)
+            temp_open_pl = round(temp_open_quantity * contract_size * (temp_last_price - temp_open_price), 2)
             print(f"\nTotal Open PL is {temp_open_pl}\n")
     else:
         print("Ticker not in unique tickers")
