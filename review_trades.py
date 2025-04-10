@@ -299,7 +299,7 @@ def get_last_price(ticker = None):
         "ZT Jun'25": ["ZT=F"],
         "ZF Jun'25": ["ZF=F"],
         "ZN Jun'25": ["ZN=F"],
-        "TN Jun'25": ["TM=F"],
+        "TN Jun'25": ["TN=F"],
         "ZB Jun'25": ["ZB=F"],
         "UB Jun'25": ["UB=F"],
     }
