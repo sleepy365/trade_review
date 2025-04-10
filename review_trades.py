@@ -114,7 +114,7 @@ def analyse_trades(all_trades = None):
     tickers = all_trades.ticker.unique()
     exclusion_list = ["USD.HKD", "AUD.USD", "EUR.USD", "USD.CNH"]
     tickers = [ticker for ticker in tickers if ticker not in exclusion_list]
-    open_tickers, open_quantity, open_price, open_notional, last_price = [],[],[],[],[]
+    open_tickers, open_pnl, open_quantity, open_price, open_notional, last_price = [],[],[],[],[],[]
     close_tickers, scalp_pnl, close_date, close_trades = [],[],[],[]
     for ticker in tickers:
         temp = all_trades[all_trades.ticker == ticker].reset_index(drop=True)
@@ -147,6 +147,7 @@ def analyse_trades(all_trades = None):
                     last_price.append(round(ticker_px, 2))
                 else:
                     last_price.append(temp_labeled.loc[0,"price"])
+                open_pnl.append(round(qty * (ticker_px - px) * contract_size, 2))
 
         # there is only open position
         else:
@@ -162,9 +163,11 @@ def analyse_trades(all_trades = None):
                 last_price.append(round(ticker_px, 2))
             else:
                 last_price.append(temp_labeled.loc[0, "price"])
+            open_pnl.append(round(qty * (ticker_px - px) * contract_size, 2))
 
     open_df = pd.DataFrame(
         {'ticker' : open_tickers,
+         'open_pnl': open_pnl,
          'open_quantity' : open_quantity,
          'open_price' : open_price,
          'open_notional' : open_notional,
@@ -180,7 +183,6 @@ def analyse_trades(all_trades = None):
     )
     # sort open_df by notional traded and closed trades by absolute PL
     open_df = open_df.sort_values(by = "open_notional", ignore_index = True, ascending = False)
-    open_df["open_pnl"] = round(np.sign(open_df["open_quantity"]) * open_df["open_notional"] * ((open_df["last_price"] / open_df["open_price"])-1), 2)
 
     close_df["abs_scalp_pnl"] = abs(close_df["scalp_pnl"])
     close_df = close_df.sort_values(by="abs_scalp_pnl", ignore_index=True, ascending=False)
@@ -351,13 +353,12 @@ def get_ticker_trades(all_trades = None, ticker = None):
             if i != 0:
                 temp_open_quantity = temp_open.quantity.sum()
                 temp_open_price = sum(temp_open["quantity"] * temp_open["price"]) / temp_open_quantity
-                temp_open_notional = round(abs(temp_open_price * temp_open_quantity * contract_size), 0)
                 ticker_px = get_last_price(ticker)
                 if ticker_px is not None:
                     temp_last_price = round(ticker_px, 2)
                 else:
                     temp_last_price = temp_labeled.loc[0, "price"]
-                temp_open_pl = round(np.sign(temp_open_quantity) * temp_open_notional * ((temp_last_price / temp_open_price)-1), 2)
+                temp_open_pl = round(temp_open_quantity * contract_size * (temp_last_price - temp_open_price), 2)
                 print(f"\nTotal Open PL is {temp_open_pl}\n"
                     f"Total Scalp PL is {temp_scalp_pnl}")
             if i == 0:
