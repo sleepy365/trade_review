@@ -147,6 +147,7 @@ def analyse_trades(all_trades = None):
                     last_price.append(round(ticker_px, 2))
                 else:
                     last_price.append(temp_labeled.loc[0,"price"])
+                    ticker_px = temp_labeled.loc[0,"price"]
                 open_pnl.append(round(qty * (ticker_px - px) * contract_size, 2))
 
         # there is only open position
@@ -163,6 +164,7 @@ def analyse_trades(all_trades = None):
                 last_price.append(round(ticker_px, 2))
             else:
                 last_price.append(temp_labeled.loc[0, "price"])
+                ticker_px = temp_labeled.loc[0, "price"]
             open_pnl.append(round(qty * (ticker_px - px) * contract_size, 2))
 
     open_df = pd.DataFrame(
