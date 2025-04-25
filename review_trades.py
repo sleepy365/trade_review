@@ -273,10 +273,14 @@ def exposure_breakdown(df = None):
         "TN": ["DV01", 7.7/10000],
         "ZB": ["DV01", 10.8/10000],
         "UB": ["DV01", 16.2/10000],
+        "GLD" :["XAU", 1]
     }
-
-    open_summary["exposure"] = open_summary.apply(lambda x: exposure_table.get(x.ticker.split()[0])[0], axis=1)
-    open_summary["beta"] = open_summary.apply(lambda x: exposure_table.get(x.ticker.split()[0])[1], axis=1)
+    try:
+        open_summary["exposure"] = open_summary.apply(lambda x: exposure_table.get(x.ticker.split()[0])[0], axis=1)
+        open_summary["beta"] = open_summary.apply(lambda x: exposure_table.get(x.ticker.split()[0])[1], axis=1)
+    except TypeError:
+        print("Some ticker not in exposure_table, fix to see exposure breakdown")
+        return None
 
     exposure_list = open_summary.exposure.unique()
     exposure_notional = []
