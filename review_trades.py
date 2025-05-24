@@ -18,6 +18,10 @@ START_DATE = datetime(2023, 1, 1)
 MIN_SCALP = 100
 
 
+
+# Todo
+# improve get_last_price for futures, right now it has too much hardcoding
+
 def store_trades(start_date = START_DATE, all_trades = None, file_location = None):
     if file_location is None:
         print("No file location")
@@ -39,6 +43,7 @@ def store_trades(start_date = START_DATE, all_trades = None, file_location = Non
         "SOFR3" : 2500,
         "GBS" : 1000*currency_table["EURUSD"],
         "UC" : 100000/currency_table["USDCNH"],
+        "CL" : 1000,
     }
     imap = connect_imap()
     imap.select('Inbox')
@@ -273,7 +278,8 @@ def exposure_breakdown(df = None):
         "TN": ["DV01", 7.7/10000],
         "ZB": ["DV01", 10.8/10000],
         "UB": ["DV01", 16.2/10000],
-        "GLD" :["XAU", 1]
+        "GLD" :["XAU", 1],
+        "CL" : ["CL", 1],
     }
     try:
         open_summary["exposure"] = open_summary.apply(lambda x: exposure_table.get(x.ticker.split()[0])[0], axis=1)
@@ -310,6 +316,7 @@ def get_last_price(ticker = None):
         "TN Jun'25": ["TN=F"],
         "ZB Jun'25": ["ZB=F"],
         "UB Jun'25": ["UB=F"],
+        "CL Jul'25" :["CLN25.NYM"]
     }
     compound_factor = 1 # for stocks, we can simply take the last price
 
