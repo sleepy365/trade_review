@@ -306,27 +306,30 @@ def exposure_breakdown(df = None):
 
 def get_last_price(ticker = None):
     # return the most recent closing price of us stock or future
-    # pass for futures
     ib_yf_mapping = {
         # "ticker" : ["yfinance=F", carry rate, expiry date]
         "UC Jun'25": ["USDCNH=X" , -0.022, "2025/6/16"],
-        "ZT Jun'25": ["ZT=F"],
-        "ZF Jun'25": ["ZF=F"],
-        "ZN Jun'25": ["ZN=F"],
-        "TN Jun'25": ["TN=F"],
-        "ZB Jun'25": ["ZB=F"],
-        "UB Jun'25": ["UB=F"],
-        "CL Jul'25" :["CLN25.NYM"]
+        "ZT": ["ZT=F"],
+        "ZF": ["ZF=F"],
+        "ZN": ["ZN=F"],
+        "TN": ["TN=F"],
+        "ZB": ["ZB=F"],
+        "UB": ["UB=F"],
+        "CL" :["CL=F"]
     }
-    compound_factor = 1 # for stocks, we can simply take the last price
 
     if " " in ticker:
         ticker_key =  ticker.split()[0] + " " + ticker.split()[1]
-        if ticker_key in ib_yf_mapping.keys():
+        # if it's a cme future, no need to specify the expiration month due to no efp.
+        if ticker.split()[0] in ib_yf_mapping.keys():
+            ticker = ib_yf_mapping[ticker.split()[0]][0]
+        # if it's a future where expiration efp needs to be computed
+        elif ticker_key in ib_yf_mapping.keys():
             ticker = ib_yf_mapping[ticker_key][0]
             if len(ib_yf_mapping[ticker_key]) == 3:
                 days_to_expiry = (datetime.strptime(ib_yf_mapping[ticker_key][2], "%Y/%m/%d") - datetime.now()).days
                 compound_factor = (1+ib_yf_mapping[ticker_key][1]/365)**days_to_expiry
+        # no future able to be resolved
         else:
             print(f"Future not resolved for {ticker}, defaulting to open_price")
             return None
