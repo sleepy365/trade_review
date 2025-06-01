@@ -315,15 +315,16 @@ def get_last_price(ticker = None):
         "TN": ["TN=F"],
         "ZB": ["ZB=F"],
         "UB": ["UB=F"],
-        "CL" :["CL=F"]
+        "CL": ["CL=F"],
     }
-
+    # default compound factor is 1 because no need to account for interest
+    compound_factor = 1
     if " " in ticker:
         ticker_key =  ticker.split()[0] + " " + ticker.split()[1]
         # if it's a cme future, no need to specify the expiration month due to no efp.
         if ticker.split()[0] in ib_yf_mapping.keys():
             ticker = ib_yf_mapping[ticker.split()[0]][0]
-        # if it's a future where expiration efp needs to be computed
+        # if it's a future where interest needs to be accounted for
         elif ticker_key in ib_yf_mapping.keys():
             ticker = ib_yf_mapping[ticker_key][0]
             if len(ib_yf_mapping[ticker_key]) == 3:
