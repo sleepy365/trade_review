@@ -16,6 +16,7 @@ pd.set_option('display.max_rows', 500)
 
 START_DATE = datetime(2023, 1, 1)
 MIN_SCALP = 100
+EXCLUSION_LIST = ["USD.HKD", "AUD.USD", "EUR.USD", "USD.CNH"]
 
 
 
@@ -117,8 +118,7 @@ def find_trades(file_location):
 # need to add a way for my script to differentiate between closed positions and open positions, in chronological order
 def analyse_trades(all_trades = None):
     tickers = all_trades.ticker.unique()
-    exclusion_list = ["USD.HKD", "AUD.USD", "EUR.USD", "USD.CNH"]
-    tickers = [ticker for ticker in tickers if ticker not in exclusion_list]
+    tickers = [ticker for ticker in tickers if ticker not in EXCLUSION_LIST]
     open_tickers, open_pnl, open_quantity, open_price, open_notional, last_price = [],[],[],[],[],[]
     close_tickers, scalp_pnl, close_date, close_trades = [],[],[],[]
     for ticker in tickers:
@@ -402,8 +402,7 @@ def get_ticker_trades(all_trades = None, ticker = None):
 def ticker_history(all_trades = None):
     print("testing counting trades")
     df = all_trades.copy()
-    exclusion_list = ["USD.HKD", "AUD.USD", "EUR.USD", "USD.CNH"]
-    df = df[~df["ticker"].isin(exclusion_list)]
+    df = df[~df["ticker"].isin(EXCLUSION_LIST)]
     df["ticker"] = df.apply(lambda x: x.ticker.split()[0], axis = 1)
     df["date_long"] = df.apply(lambda x: datetime.strptime(x.date_short, "%Y/%m/%d"), axis =1)
     df.set_index("date_long", inplace = True, drop = True)
@@ -413,6 +412,7 @@ def ticker_history(all_trades = None):
 def other_functions(all_trades = None, file_location = None):
     # at the end of the routine ask the user for other things that they may want to do
     unique_tickers = all_trades["ticker"].unique()
+    unique_tickers = [x for x in unique_tickers if x not in EXCLUSION_LIST]
     print(unique_tickers)
 
     function_loop = True
