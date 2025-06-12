@@ -308,7 +308,7 @@ def get_last_price(ticker = None):
     # return the most recent closing price of us stock or future
     ib_yf_mapping = {
         # "ticker" : ["yfinance=F", carry rate, expiry date]
-        "UC Jun'25": ["USDCNH=X" , -0.022, "2025/6/16"],
+        "UC Sep'25": ["USDCNH=X" , -0.02, "2025/9/16"],
         "ZT": ["ZT=F"],
         "ZF": ["ZF=F"],
         "ZN": ["ZN=F"],
