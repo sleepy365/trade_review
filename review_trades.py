@@ -21,7 +21,7 @@ EXCLUSION_LIST = ["USD.HKD", "AUD.USD", "EUR.USD", "USD.CNH"]
 
 
 # Todo
-# improve get_last_price for futures, right now it has too much hardcoding
+# redo the PL computation for unrealised PL and realised PL to make the split more accurate.
 
 def store_trades(start_date = START_DATE, all_trades = None, file_location = None):
     if file_location is None:
@@ -149,7 +149,7 @@ def analyse_trades(all_trades = None):
                 open_notional.append(round(abs(px*qty*contract_size),0))
                 ticker_px = get_last_price(ticker)
                 if ticker_px is not None:
-                    last_price.append(round(ticker_px, 2))
+                    last_price.append(round(ticker_px, 4))
                 else:
                     last_price.append(temp_labeled.loc[0,"price"])
                     ticker_px = temp_labeled.loc[0,"price"]
@@ -166,7 +166,7 @@ def analyse_trades(all_trades = None):
             open_notional.append(round(abs(px * qty * contract_size), 0))
             ticker_px = get_last_price(ticker)
             if ticker_px is not None:
-                last_price.append(round(ticker_px, 2))
+                last_price.append(round(ticker_px, 4))
             else:
                 last_price.append(temp_labeled.loc[0, "price"])
                 ticker_px = temp_labeled.loc[0, "price"]
@@ -308,7 +308,7 @@ def get_last_price(ticker = None):
     # return the most recent closing price of us stock or future
     ib_yf_mapping = {
         # "ticker" : ["yfinance=F", carry rate, expiry date]
-        "UC Sep'25": ["USDCNH=X" , -0.02, "2025/9/16"],
+        "UC Sep'25": ["USDCNH=X" , -0.027, "2025/9/16"],
         "ZT": ["ZT=F"],
         "ZF": ["ZF=F"],
         "ZN": ["ZN=F"],
@@ -334,11 +334,12 @@ def get_last_price(ticker = None):
         else:
             print(f"Future not resolved for {ticker}, defaulting to open_price")
             return None
+    stock_data = yf.download(ticker, period="1d", auto_adjust=True)
     try:
-        stock_data = yf.download(ticker, period = "7d", auto_adjust=True)
         return stock_data.tail(1)["Close"].values[0][0]*compound_factor
     except:
         print(f"Something went wrong with finding last price for {ticker}, defaulting to open_price")
+        print(stock_data)
         return None
 
 def get_ticker_trades(all_trades = None, ticker = None):
@@ -372,7 +373,7 @@ def get_ticker_trades(all_trades = None, ticker = None):
                 temp_open_price = sum(temp_open["quantity"] * temp_open["price"]) / temp_open_quantity
                 ticker_px = get_last_price(ticker)
                 if ticker_px is not None:
-                    temp_last_price = round(ticker_px, 2)
+                    temp_last_price = round(ticker_px, 4)
                 else:
                     temp_last_price = temp_labeled.loc[0, "price"]
                 temp_open_pl = round(temp_open_quantity * contract_size * (temp_last_price - temp_open_price), 2)
@@ -390,7 +391,7 @@ def get_ticker_trades(all_trades = None, ticker = None):
             temp_open_notional = round(abs(temp_open_price * temp_open_quantity * contract_size), 0)
             ticker_px = get_last_price(ticker)
             if ticker_px is not None:
-                temp_last_price = round(ticker_px, 2)
+                temp_last_price = round(ticker_px, 4)
             else:
                 temp_last_price = temp_labeled.loc[0, "price"]
             temp_open_pl = round(temp_open_quantity * contract_size * (temp_last_price - temp_open_price), 2)
