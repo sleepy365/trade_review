@@ -1,9 +1,9 @@
 Ignore exports folder and all contents
-
 /exports/
 /credentials.py
 /sleepy.ico
-/trade_review.bat3
+/trade_review.bat
 
 ignore IDE and pycharm files
-.idea/ *.iml
+/.idea/
+/__pycache__/
