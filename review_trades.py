@@ -14,7 +14,6 @@ pd.set_option('display.max_columns', None)  # Show all columns
 pd.set_option('display.width', 1000)  # Increase width to fit your screen
 pd.set_option('display.expand_frame_repr', False)  # Prevent wrapping
 pd.set_option('display.max_colwidth', None)  # Show full content of each column
-pd.options.display.float_format = '{:.2f}'.format # set formating to 2d.p
 
 
 # Set Variables
@@ -106,15 +105,16 @@ class PositionKeeper:
             self.update_stats()
 
     def get_position_info(self):
+        # nice script to return output in formatted way
         return {
             "timestamp": self.timestamp,
             "exposure": self.exposure,
             "last_price": self.last_price,
             "avg_price": self.avg_price,
             "market_value": self.market_value,
-            "realised_pnl": self.realised_pnl,
-            "unrealised_pnl": self.unrealised_pnl,
-            "total_pnl": self.realised_pnl + self.unrealised_pnl
+            "realised_pnl": round(float(self.realised_pnl),4),
+            "unrealised_pnl": round(float(self.unrealised_pnl),4),
+            "total_pnl": round(float(self.realised_pnl + self.unrealised_pnl),4)
         }
 
 def store_trades(start_date = START_DATE, all_trades = None, file_location = None):
@@ -234,8 +234,8 @@ def analyse_trades(all_trades = None):
 
         # aggregate the per ticker output of unrealised and realised PL
         all_tickers.append(ticker)
-        open_pnl.append(round(ticker_output["unrealised_pnl"], 2))
-        close_pnl.append(round(ticker_output["realised_pnl"], 2))
+        open_pnl.append(ticker_output["unrealised_pnl"])
+        close_pnl.append(ticker_output["realised_pnl"])
         open_quantity.append(ticker_output["exposure"])
         open_price.append(ticker_output["avg_price"])
         open_notional.append(ticker_output["market_value"] * contract_size)
