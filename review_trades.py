@@ -10,6 +10,11 @@ from credentials import export_folder
 import yfinance as yf
 pd.options.mode.chained_assignment = None  # default='warn'
 pd.set_option('display.max_rows', 500)
+pd.set_option('display.max_columns', None)  # Show all columns
+pd.set_option('display.width', 1000)  # Increase width to fit your screen
+pd.set_option('display.expand_frame_repr', False)  # Prevent wrapping
+pd.set_option('display.max_colwidth', None)  # Show full content of each column
+pd.options.display.float_format = '{:.2f}'.format # set formating to 2d.p
 
 
 # Set Variables
@@ -20,8 +25,97 @@ EXCLUSION_LIST = ["USD.HKD", "AUD.USD", "EUR.USD", "USD.CNH"]
 
 
 
-# Todo
-# redo the PL computation for unrealised PL and realised PL to make the split more accurate.
+class PositionKeeper:
+    # Designed to keep track of unrealised and realised positions for a single ticker on a trade by trade basis
+    # Can also mark to market
+    # Can be changed to manage exchange dual listings through adding a self.position dictionary variable
+    # pnl includes contract size but exposure and market value is in contract units
+    def __init__(self, ticker, contract_size):
+        self.ticker = ticker # name of symbol
+        self.contract_size = contract_size # contract size
+        self.exposure = 0 # exposure of the base symbol
+        self.last_price = 0  # Last trade price of the symbol_base
+        self.avg_price = 0  # Average entry price for current exposure
+        self.market_value = 0 # Current market value of position
+        self.realised_pnl = 0
+        self.unrealised_pnl = 0
+        self.timestamp = 0 # time of each trade
+
+    def add_trade(self, time, price, quantity):
+        # Update last price and timestamp
+        self.timestamp = time
+        self.last_price = price
+
+        # dealing with the exposure and adding to PL
+        if quantity > 0:  # Buy trade exposure
+            if self.exposure == 0:
+                self.avg_price = price
+                self.exposure += quantity
+
+            elif self.exposure > 0:  # Adding to long or flat exposure
+                total_cost = (self.exposure * self.avg_price) + (quantity * price)
+                self.exposure += quantity
+                self.avg_price = total_cost / self.exposure
+
+            elif self.exposure + quantity <= 0: # Reducing short exposure
+                profit = -quantity * (price - self.avg_price)
+                self.realised_pnl += profit * self.contract_size
+                self.exposure += quantity
+                if self.exposure == 0:
+                    self.avg_price = 0
+
+            elif self.exposure + quantity > 0: # closing short and go long exposure
+                profit = self.exposure * (price -self.avg_price)
+                self.realised_pnl += profit * self.contract_size
+                self.exposure += quantity
+                self.avg_price = price
+
+        elif quantity < 0:  # sell trade exposure
+            if self.exposure == 0:
+                self.avg_price = price
+                self.exposure += quantity
+
+            elif self.exposure < 0:  # add to short
+                total_cost = (self.exposure * self.avg_price) + (quantity * price)
+                self.exposure += quantity
+                self.avg_price = total_cost / self.exposure
+
+            elif self.exposure + quantity >= 0: # Reducing long exposure
+                profit = -quantity * (price - self.avg_price)
+                self.realised_pnl += profit * self.contract_size
+                self.exposure += quantity
+                if self.exposure == 0:
+                    self.avg_price = 0
+
+            elif self.exposure + quantity < 0: # closing long and go short
+                profit = self.exposure * (price -self.avg_price)
+                self.realised_pnl += profit * self.contract_size
+                self.exposure += quantity
+                self.avg_price = price
+
+    def update_stats(self):
+        self.market_value = self.exposure * self.last_price
+        self.unrealised_pnl = (self.market_value - self.exposure * self.avg_price) * self.contract_size
+
+    def mark_to_market(self):
+        # mark to market for open position otherwise do nth
+        market_price = get_last_price(self.ticker)
+        # all the error handling is done in get_last_price so it just returns None if error
+        if market_price is not None:
+            self.last_price = market_price
+            self.update_stats()
+
+    def get_position_info(self):
+        return {
+            "timestamp": self.timestamp,
+            "exposure": self.exposure,
+            "last_price": self.last_price,
+            "avg_price": self.avg_price,
+            "market_value": self.market_value,
+            "realised_pnl": self.realised_pnl,
+            "unrealised_pnl": self.unrealised_pnl,
+            "total_pnl": self.realised_pnl + self.unrealised_pnl
+        }
 
 def store_trades(start_date = START_DATE, all_trades = None, file_location = None):
     if file_location is None:
@@ -119,112 +213,75 @@ def find_trades(file_location):
 def analyse_trades(all_trades = None):
     tickers = all_trades.ticker.unique()
     tickers = [ticker for ticker in tickers if ticker not in EXCLUSION_LIST]
-    open_tickers, open_pnl, open_quantity, open_price, open_notional, last_price = [],[],[],[],[],[]
-    close_tickers, scalp_pnl, close_date, close_trades = [],[],[],[]
+    all_tickers, open_pnl, close_pnl, open_quantity, open_price, open_notional, last_price, last_date = [],[],[],[],[],[],[],[]
     for ticker in tickers:
-        temp = all_trades[all_trades.ticker == ticker].reset_index(drop=True)
-        temp_labeled = label_trades(temp)
-        contract_size = temp_labeled.loc[0,"contract_size"]
-        # check if position has been closed
-        if 'close' in temp_labeled["flag"].values:
-            i = temp_labeled[temp_labeled["flag"] == "close"].index[0]
-            close_date.append(temp_labeled.loc[i,"date_short"])
+        ticker_trades = all_trades.loc[all_trades.ticker == ticker].iloc[::-1].reset_index(drop=True)
+        contract_size = ticker_trades.loc[0, "contract_size"]
 
-            temp_open = temp_labeled.loc[:i-1,]
-            temp_close = temp_labeled.loc[i:,]
+        # create PositionKeeper class to compute unrealised/realised PL per trade
+        ticker_position = PositionKeeper(ticker, contract_size)
+        for index, row in ticker_trades.iterrows():
+            # input each trade into PositionKeeper line by line
+            ticker_position.add_trade(row.date_short, row.price, row.quantity)
+            # recompute unrealised and realised pnl based on market value
+            ticker_position.update_stats()
+        # for open positions, mark to market
+        if ticker_position.exposure != 0:
+            ticker_position.mark_to_market()
 
-            # analyse close trades
-            pnl = round(-sum(temp_close["quantity"] * temp_close["price"])*contract_size,2)
-            close_tickers.append(ticker)
-            close_trades.append(len(temp_close))
-            scalp_pnl.append(pnl)
+        # retrieve the output of PositionKeeper
+        ticker_output = ticker_position.get_position_info()
 
-            # if i != 0, it means there is some open position
-            if i != 0:
-                qty = temp_open.quantity.sum()
-                px = sum(temp_open["quantity"]*temp_open["price"])/qty
-                open_tickers.append(ticker)
-                open_quantity.append(qty)
-                open_price.append(px)
-                open_notional.append(round(abs(px*qty*contract_size),0))
-                ticker_px = get_last_price(ticker)
-                if ticker_px is not None:
-                    last_price.append(round(ticker_px, 4))
-                else:
-                    last_price.append(temp_labeled.loc[0,"price"])
-                    ticker_px = temp_labeled.loc[0,"price"]
-                open_pnl.append(round(qty * (ticker_px - px) * contract_size, 2))
+        # aggregate the per ticker output of unrealised and realised PL
+        all_tickers.append(ticker)
+        open_pnl.append(round(ticker_output["unrealised_pnl"], 2))
+        close_pnl.append(round(ticker_output["realised_pnl"], 2))
+        open_quantity.append(ticker_output["exposure"])
+        open_price.append(ticker_output["avg_price"])
+        open_notional.append(ticker_output["market_value"] * contract_size)
+        last_price.append(ticker_output["last_price"])
+        last_date.append(ticker_output["timestamp"])
 
-        # there is only open position
-        else:
-            # analyse open trades
-            qty = temp_labeled.quantity.sum()
-            px = round(sum(temp_labeled["quantity"]*temp_labeled["price"])/qty,4)
-            open_tickers.append(ticker)
-            open_quantity.append(qty)
-            open_price.append(px)
-            open_notional.append(round(abs(px * qty * contract_size), 0))
-            ticker_px = get_last_price(ticker)
-            if ticker_px is not None:
-                last_price.append(round(ticker_px, 4))
-            else:
-                last_price.append(temp_labeled.loc[0, "price"])
-                ticker_px = temp_labeled.loc[0, "price"]
-            open_pnl.append(round(qty * (ticker_px - px) * contract_size, 2))
-
-    open_df = pd.DataFrame(
-        {'ticker' : open_tickers,
+    all_pnl = pd.DataFrame(
+        {'ticker' : all_tickers,
          'open_pnl': open_pnl,
+         'scalp_pnl': close_pnl,
          'open_quantity' : open_quantity,
          'open_price' : open_price,
          'open_notional' : open_notional,
          'last_price' : last_price,
-         }
-    )
-    close_df = pd.DataFrame(
-        {'tickers' : close_tickers,
-         'scalp_pnl' : scalp_pnl,
-         'date_closed' : close_date,
-         'num_trades': close_trades,
-         }
-    )
-    # sort open_df by notional traded and closed trades by absolute PL
-    open_df = open_df.sort_values(by = "open_notional", ignore_index = True, ascending = False)
+         'last_trade' : last_date
+         })
 
-    close_df["abs_scalp_pnl"] = abs(close_df["scalp_pnl"])
-    close_df = close_df.sort_values(by="abs_scalp_pnl", ignore_index=True, ascending=False)
-    close_df = close_df[close_df["abs_scalp_pnl"] >= MIN_SCALP]
-    close_df = close_df.drop(columns = ["abs_scalp_pnl"])
+    # sort by absolute PL
+    all_pnl.insert(1, "all_pnl", all_pnl["open_pnl"] + all_pnl["scalp_pnl"])
+    all_pnl["abs_all_pnl"] = abs(all_pnl["all_pnl"])
+    all_pnl = all_pnl.sort_values(by = "abs_all_pnl", ignore_index = True, ascending = False)
+    all_pnl.to_csv(file_location + r"\all_summary.csv", index=False)
+
+    # split into open/close df
+    close_df = all_pnl.loc[all_pnl["open_quantity"] == 0].reset_index(drop = True)
+    open_df = all_pnl.loc[all_pnl["open_quantity"] != 0].reset_index(drop = True)
+
+    # clean up and sort close/open df
+    close_df = close_df.sort_values(by="abs_all_pnl", ignore_index=True, ascending=False)
+    close_df = close_df[close_df["abs_all_pnl"] >= MIN_SCALP]
+    close_df = close_df.drop(columns = ["open_pnl", "open_quantity", "open_notional", "all_pnl", "abs_all_pnl"])
+    open_df = open_df.drop(columns = ["abs_all_pnl"])
 
     # exposure breakdown of open trades
     exposure_df = exposure_breakdown(open_df)
-    open_df = open_df.drop(columns = ["open_notional"])
 
+    # save the csv locally
     open_df.to_csv(file_location + r"\open_summary.csv", index=False)
     close_df.to_csv(file_location + r"\scalp_summary.csv", index=False)
 
-    print(open_df, f"\nTotal Open PL is {round(open_df["open_pnl"].sum(), 1)}\n"
-                   f"Total Scalp PL is {round(close_df["scalp_pnl"].sum(), 1)}")
+    print(open_df, f"\nTotal Open PL is {round(all_pnl["open_pnl"].sum(), 1)}\n"
+                   f"Total Scalp PL is {round(all_pnl["scalp_pnl"].sum(), 1)}")
     print(exposure_df)
     print("-----------------------------------------------------------\n")
     return
 
-
-def label_trades(temp = None):
-    df = temp.reset_index(drop = True)
-    df["flag"] = "open"
-    # loop from the first last item
-    num_trades = len(df)
-    if num_trades == 1:
-        return df
-    # more than 1 trade
-    open_qty = df.loc[num_trades-1,"quantity"]
-    for x in range(1, num_trades):
-        i = num_trades-x-1
-        open_qty += df.loc[i,"quantity"]
-        if open_qty == 0:
-            df.loc[i, "flag"] = "close"
-    return df
 
 def manual_trades(file_location):
     # check for manual trade file, inserting trades into the all_trades csv of trade_type = manual
@@ -293,7 +350,7 @@ def exposure_breakdown(df = None):
     components = []
     for exposure in exposure_list:
         temp = open_summary[open_summary["exposure"] == exposure]
-        exposure_notional.append(sum(temp["open_notional"]*temp["beta"]*np.sign(temp.open_quantity)))
+        exposure_notional.append(sum(temp["open_notional"]*temp["beta"]))
         components.append(temp["ticker"].unique())
     exposure_df = pd.DataFrame(
         {
@@ -332,9 +389,9 @@ def get_last_price(ticker = None):
                 compound_factor = (1+ib_yf_mapping[ticker_key][1]/365)**days_to_expiry
         # no future able to be resolved
         else:
-            print(f"Future not resolved for {ticker}, defaulting to open_price")
+            print(f"Future not resolved for {ticker}, not marking to market")
             return None
-    stock_data = yf.download(ticker, period="1d", auto_adjust=True)
+    stock_data = yf.download(ticker, period="3d", auto_adjust=True)
     try:
         return stock_data.tail(1)["Close"].values[0][0]*compound_factor
     except:
@@ -349,53 +406,25 @@ def get_ticker_trades(all_trades = None, ticker = None):
         # ticker is a stock so make it all upper case
         ticker = ticker.upper()
 
-
     if ticker in unique_tickers:
-        temp = all_trades[all_trades["ticker"] == ticker]
-        temp_labeled = label_trades(temp)
-        print(temp_labeled)
-        contract_size = temp_labeled.loc[0, "contract_size"]
-        # check if position has been closed
-        trade_closed = False
-        if 'close' in temp_labeled["flag"].values:
-            trade_closed = True
-            i = temp_labeled[temp_labeled["flag"] == "close"].index[0]
+        ticker_trades = all_trades.loc[all_trades.ticker == ticker].iloc[::-1].reset_index(drop=True)
+        contract_size = ticker_trades.loc[0, "contract_size"]
+        # initiate PositionKeeper
+        ticker_position = PositionKeeper(ticker, contract_size)
+        # feed in trades
+        for index, row in ticker_trades.iterrows():
+            ticker_position.add_trade(row.date_short, row.price, row.quantity)
+            ticker_position.update_stats()
+            print(ticker_position.get_position_info())
+        # mark to market for open positions
+        if ticker_position.exposure != 0:
+            print("marking to market for open position")
+            ticker_position.mark_to_market()
+        ticker_output = ticker_position.get_position_info()
 
-            temp_open = temp_labeled.loc[:i - 1, ]
-            temp_close = temp_labeled.loc[i:, ]
-
-            # analyse close trades
-            temp_scalp_pnl = round(-sum(temp_close["quantity"] * temp_close["price"]) * contract_size, 2)
-
-            # if i != 0, it means there is some open position
-            if i != 0:
-                temp_open_quantity = temp_open.quantity.sum()
-                temp_open_price = sum(temp_open["quantity"] * temp_open["price"]) / temp_open_quantity
-                ticker_px = get_last_price(ticker)
-                if ticker_px is not None:
-                    temp_last_price = round(ticker_px, 4)
-                else:
-                    temp_last_price = temp_labeled.loc[0, "price"]
-                temp_open_pl = round(temp_open_quantity * contract_size * (temp_last_price - temp_open_price), 2)
-                print(f"\nTotal Open PL is {temp_open_pl}\n"
-                    f"Total Scalp PL is {temp_scalp_pnl}")
-            if i == 0:
-                print(f"Total Scalp PL is {temp_scalp_pnl}")
-
-        # there is only open position
-        else:
-            # analyse open trades
-            temp_open_quantity = temp_labeled.quantity.sum()
-            temp_open_price = round(sum(temp_labeled["quantity"] * temp_labeled["price"]) / temp_open_quantity, 4)
-
-            temp_open_notional = round(abs(temp_open_price * temp_open_quantity * contract_size), 0)
-            ticker_px = get_last_price(ticker)
-            if ticker_px is not None:
-                temp_last_price = round(ticker_px, 4)
-            else:
-                temp_last_price = temp_labeled.loc[0, "price"]
-            temp_open_pl = round(temp_open_quantity * contract_size * (temp_last_price - temp_open_price), 2)
-            print(f"\nTotal Open PL is {temp_open_pl}\n")
+        print(f"\nTotal Open PL is {ticker_output["unrealised_pnl"]}"
+              f"\nTotal Scalp PL is {ticker_output["realised_pnl"]}"
+              f"\nTotal PL is {ticker_output["total_pnl"]}\n")
     else:
         print("Ticker not in unique tickers")
     return
