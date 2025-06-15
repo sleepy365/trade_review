@@ -1,0 +1,6 @@
+Ignore exports folder and all contents
+
+/exports/
+/credentials.py
+/sleepy.ico
+/trade_review.bat
