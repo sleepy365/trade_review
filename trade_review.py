@@ -23,6 +23,8 @@ MIN_SCALP = 100
 EXCLUSION_LIST = ["USD.HKD", "AUD.USD", "EUR.USD", "USD.CNH"]
 
 
+# Todo
+# find a way to clean up future symbols so the identifier is not like UB Sep'25 @CBOT, remove the exc
 
 class PositionKeeper:
     # Designed to keep track of unrealised and realised positions for a single ticker on a trade by trade basis
