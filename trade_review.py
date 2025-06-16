@@ -26,6 +26,7 @@ EXCLUSION_LIST = ["USD.HKD", "AUD.USD", "EUR.USD", "USD.CNH"]
 # Todo
 # find a way to clean up future symbols so the identifier is not like UB Sep'25 @CBOT, remove the exc
 # in analyse trades, use pd.Dataframe on a list of dictionaries and get rid of the bulk .append usage which is stupid
+# maybe use the MIN_SCALP global var somewhere
 
 class PositionKeeper:
     # Designed to keep track of unrealised and realised positions for a single ticker on a trade by trade basis
@@ -261,23 +262,16 @@ def analyse_trades(all_trades = None):
     all_pnl["abs_all_pnl"] = abs(all_pnl["all_pnl"])
     all_pnl = all_pnl.sort_values(by = "abs_all_pnl", ignore_index = True, ascending = False)
     all_pnl.to_csv(file_location + r"\all_summary.csv", index=False)
+    all_pnl = all_pnl.drop(columns=["abs_all_pnl"])
 
-    # split into open/close df
-    close_df = all_pnl.loc[all_pnl["open_quantity"] == 0].reset_index(drop = True)
+    # split into open
     open_df = all_pnl.loc[all_pnl["open_quantity"] != 0].reset_index(drop = True)
-
-    # clean up and sort close/open df
-    close_df = close_df.sort_values(by="abs_all_pnl", ignore_index=True, ascending=False)
-    close_df = close_df[close_df["abs_all_pnl"] >= MIN_SCALP]
-    close_df = close_df.drop(columns = ["open_pnl", "open_quantity", "open_notional", "all_pnl", "abs_all_pnl"])
-    open_df = open_df.drop(columns = ["abs_all_pnl"])
 
     # exposure breakdown of open trades
     exposure_df = exposure_breakdown(open_df)
 
     # save the csv locally
     open_df.to_csv(file_location + r"\open_summary.csv", index=False)
-    close_df.to_csv(file_location + r"\scalp_summary.csv", index=False)
 
     print(open_df, f"\nTotal Open PL is {round(all_pnl["open_pnl"].sum(), 1)}\n"
                    f"Total Scalp PL is {round(all_pnl["scalp_pnl"].sum(), 1)}")
@@ -456,7 +450,7 @@ def other_functions(all_trades = None, file_location = None):
             "Type ticker to see trades. e.g NVDA\n"
             "Other functions:\n"
             "\t1 to count trades in the current month\n"
-            "\t2 to see scalp summary\n"
+            "\t2 to see trade summary per ticker\n"
             "\t3 to see history of tickers traded\n"
             "\t4 to wipe the most recent day of recorded trades\n"
         )
@@ -468,8 +462,8 @@ def other_functions(all_trades = None, file_location = None):
             count_trades()
         # show scalp summary
         elif ticker_input == "2":
-            close_df = pd.read_csv(file_location+r"\scalp_summary.csv")
-            print(close_df, f"\nTotal Scalp PL is {round(close_df["scalp_pnl"].sum(), 1)}")
+            all_pnl = pd.read_csv(file_location+r"\all_summary.csv")
+            print(all_pnl, f"\nTotal Scalp PL is {round(all_pnl["scalp_pnl"].sum(), 1)}")
         # show ticker history
         elif ticker_input == "3":
             ticker_history(all_trades)
