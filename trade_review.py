@@ -25,6 +25,7 @@ EXCLUSION_LIST = ["USD.HKD", "AUD.USD", "EUR.USD", "USD.CNH"]
 
 # Todo
 # find a way to clean up future symbols so the identifier is not like UB Sep'25 @CBOT, remove the exc
+# in analyse trades, use pd.Dataframe on a list of dictionaries and get rid of the bulk .append usage which is stupid
 
 class PositionKeeper:
     # Designed to keep track of unrealised and realised positions for a single ticker on a trade by trade basis
@@ -414,19 +415,21 @@ def get_ticker_trades(all_trades = None, ticker = None):
         # initiate PositionKeeper
         ticker_position = PositionKeeper(ticker, contract_size)
         # feed in trades
+        ticker_output = []
         for index, row in ticker_trades.iterrows():
             ticker_position.add_trade(row.date_short, row.price, row.quantity)
             ticker_position.update_stats()
-            print(ticker_position.get_position_info())
+            ticker_output.append(ticker_position.get_position_info())
         # mark to market for open positions
         if ticker_position.exposure != 0:
             print("marking to market for open position")
             ticker_position.mark_to_market()
-        ticker_output = ticker_position.get_position_info()
-
-        print(f"\nTotal Open PL is {ticker_output["unrealised_pnl"]}"
-              f"\nTotal Scalp PL is {ticker_output["realised_pnl"]}"
-              f"\nTotal PL is {ticker_output["total_pnl"]}\n")
+            ticker_output.append(ticker_position.get_position_info())
+        ticker_output_df = pd.DataFrame(ticker_output)
+        print(ticker_output_df)
+        print(f"\nTotal Open PL is {ticker_output_df["unrealised_pnl"].iloc[-1]}"
+              f"\nTotal Scalp PL is {ticker_output_df["realised_pnl"].iloc[-1]}"
+              f"\nTotal PL is {ticker_output_df["total_pnl"].iloc[-1]}\n")
     else:
         print("Ticker not in unique tickers")
     return
