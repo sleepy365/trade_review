@@ -115,9 +115,9 @@ class PositionKeeper:
             "last_price": self.last_price,
             "avg_price": self.avg_price,
             "market_value": self.market_value,
-            "realised_pnl": round(float(self.realised_pnl),4),
-            "unrealised_pnl": round(float(self.unrealised_pnl),4),
-            "total_pnl": round(float(self.realised_pnl + self.unrealised_pnl),4)
+            "realised_pnl": round(float(self.realised_pnl),2),
+            "unrealised_pnl": round(float(self.unrealised_pnl),2),
+            "total_pnl": round(float(self.realised_pnl + self.unrealised_pnl),2)
         }
 
 def store_trades(start_date = START_DATE, all_trades = None, file_location = None):
