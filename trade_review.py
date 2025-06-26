@@ -171,7 +171,7 @@ def store_trades(start_date = START_DATE, all_trades = None, file_location = Non
         ticker = ''
         for x in range(2, first_at_index):
             ticker += subject_split[x] + " "
-        ticker = ticker[:-1]
+        ticker = ticker[:-1].upper()
         if ticker.split()[0] in contract_size_table:
             contract_size = contract_size_table[ticker.split()[0]]
         else:
@@ -362,7 +362,7 @@ def get_last_price(ticker = None):
     # return the most recent closing price of us stock or future
     ib_yf_mapping = {
         # "ticker" : ["yfinance=F", carry rate, expiry date]
-        "UC Sep'25": ["USDCNH=X" , -0.028, "2025/9/16"],
+        "UC SEP'25": ["USDCNH=X" , -0.028, "2025/9/16"],
         "ZT": ["ZT=F"],
         "ZF": ["ZF=F"],
         "ZN": ["ZN=F"],
@@ -399,10 +399,7 @@ def get_last_price(ticker = None):
 def get_ticker_trades(all_trades = None, ticker = None):
     unique_tickers = all_trades["ticker"].unique()
     # first try to resolve the ticker
-    if " " not in ticker:
-        # ticker is a stock so make it all upper case
-        ticker = ticker.upper()
-
+    ticker = ticker.upper()
     if ticker in unique_tickers:
         ticker_trades = all_trades.loc[all_trades.ticker == ticker].iloc[::-1].reset_index(drop=True)
         contract_size = ticker_trades.loc[0, "contract_size"]
@@ -429,7 +426,6 @@ def get_ticker_trades(all_trades = None, ticker = None):
     return
 
 def ticker_history(all_trades = None):
-    print("testing counting trades")
     df = all_trades.copy()
     df = df[~df["ticker"].isin(EXCLUSION_LIST)]
     df["ticker"] = df.apply(lambda x: x.ticker.split()[0], axis = 1)
