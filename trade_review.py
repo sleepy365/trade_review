@@ -24,7 +24,6 @@ EXCLUSION_LIST = ["USD.HKD", "AUD.USD", "EUR.USD", "USD.CNH"]
 
 
 # Todo
-# find a way to clean up future symbols so the identifier is not like UB Sep'25 @CBOT, remove the exc
 # in analyse trades, use pd.Dataframe on a list of dictionaries and get rid of the bulk .append usage which is stupid
 # maybe use the MIN_SCALP global var somewhere
 
@@ -127,7 +126,7 @@ def store_trades(start_date = START_DATE, all_trades = None, file_location = Non
         return "0"
     currency_table = {
         "EURUSD" : 1.09,
-        "USDCNH" : 7.23,
+        "USDCNH" : 7.20,
     }
     contract_size_table = {
         "ZT": 2000,
@@ -167,9 +166,10 @@ def store_trades(start_date = START_DATE, all_trades = None, file_location = Non
         # create the trade item
         print(date_long, subject)
         subject_split = subject.split()
+        first_at_index = next(i for i, item in enumerate(subject_split) if '@' in item)
         quantity = round((1 if subject_split[0] == "BOUGHT" else -1) * float(subject_split[1].replace(",","")),0)
         ticker = ''
-        for x in range(2, subject_split.index("@")):
+        for x in range(2, first_at_index):
             ticker += subject_split[x] + " "
         ticker = ticker[:-1]
         if ticker.split()[0] in contract_size_table:
