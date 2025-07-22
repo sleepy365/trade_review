@@ -259,7 +259,8 @@ def analyse_trades(all_trades = None):
     all_pnl.insert(1, "all_pnl", all_pnl["open_pnl"] + all_pnl["scalp_pnl"])
     all_pnl["abs_all_pnl"] = abs(all_pnl["all_pnl"])
     all_pnl = all_pnl.sort_values(by = "abs_all_pnl", ignore_index = True, ascending = False)
-    all_pnl = all_pnl.loc[all_pnl["abs_all_pnl"]>MIN_SCALP]
+    # remove all trades with < MIN SCALP PNL and no open position
+    all_pnl = all_pnl.loc[~((all_pnl["abs_all_pnl"]<MIN_SCALP) & (all_pnl["open_quantity"] == 0))]
     all_pnl = all_pnl.drop(columns=["abs_all_pnl"])
     all_pnl.to_csv(file_location + r"\all_summary.csv", index=False)
 
@@ -310,6 +311,7 @@ def exposure_breakdown(df = None):
     open_summary = df.copy()
     exposure_table = {
         "AMD" : ["US", 1.5],
+        "ASML": ["EU", 1.5],
         "ARM": ["US", 1.5],
         "INDA": ["IN", 1],
         "BABA": ["CH", 1],
@@ -340,7 +342,6 @@ def exposure_breakdown(df = None):
     except TypeError:
         print("Some ticker not in exposure_table, fix to see exposure breakdown")
         return None
-
     exposure_list = open_summary.exposure.unique()
     exposure_notional = []
     components = []
