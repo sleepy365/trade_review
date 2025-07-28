@@ -23,13 +23,31 @@ def count_trades():
 
     # fetch trades for the current month
     id_list = data[0].split()
-    id_list.reverse()
+
+    # sort the id_list
+    id_date_tuple = []
+    for id in id_list:
+        result, data = imap.fetch(id, '(RFC822.HEADER)')
+        raw_email = data[0][1]                                 # Returns a byte
+        msg = email.message_from_string(raw_email.decode('utf-8'))
+
+        # remove the english of timezone to input into timezone aware datetime object
+        new_msg = " ".join(msg['Date'].split(" ")[:-1])
+        date_long = datetime.strptime(new_msg, "%a, %d %b %Y %H:%M:%S %z")
+        date_long = date_long.astimezone(pytz.timezone("Asia/Hong_Kong"))
+        id_date_tuple.append((id, date_long))
+
+    # sort the list of tuples
+    id_date_tuple.sort(key=lambda x: x[1], reverse=True)
+    sorted_ids = [pair[0] for pair in id_date_tuple]
+
+    # count trades
     num_trades,unique_trades = 0, 0
     last_price, last_ticker, last_date = 0, 0, 0
-    for id in id_list:
+    for id in sorted_ids:
         result, data = imap.fetch(id, '(RFC822)')
         raw_email = data[0][1]                                 # Returns a byte
-        msg = email.message_from_string(data[0][1].decode('utf-8'))
+        msg = email.message_from_string(raw_email.decode('utf-8'))
 
         # remove the english of timezone to input into timezone aware datetime object
         new_msg = " ".join(msg['Date'].split(" ")[:-1])
