@@ -8,7 +8,6 @@ import os
 from trade_counter import connect_imap, count_trades
 from credentials import export_folder
 import yfinance as yf
-pd.options.mode.chained_assignment = None  # default='warn'
 pd.set_option('display.max_rows', 500)
 pd.set_option('display.max_columns', None)  # Show all columns
 pd.set_option('display.width', 1000)  # Increase width to fit your screen
@@ -25,7 +24,6 @@ EXCLUSION_LIST = ["USD.HKD", "AUD.USD", "EUR.USD", "USD.CNH"]
 
 # Todo
 # in analyse trades, use pd.Dataframe on a list of dictionaries and get rid of the bulk .append usage which is stupid
-# maybe use the MIN_SCALP global var somewhere
 
 class PositionKeeper:
     # Designed to keep track of unrealised and realised positions for a single ticker on a trade by trade basis
@@ -261,8 +259,10 @@ def analyse_trades(all_trades = None):
     all_pnl.insert(1, "all_pnl", all_pnl["open_pnl"] + all_pnl["scalp_pnl"])
     all_pnl["abs_all_pnl"] = abs(all_pnl["all_pnl"])
     all_pnl = all_pnl.sort_values(by = "abs_all_pnl", ignore_index = True, ascending = False)
-    all_pnl.to_csv(file_location + r"\all_summary.csv", index=False)
+    # remove all trades with < MIN SCALP PNL and no open position
+    all_pnl = all_pnl.loc[~((all_pnl["abs_all_pnl"]<MIN_SCALP) & (all_pnl["open_quantity"] == 0))]
     all_pnl = all_pnl.drop(columns=["abs_all_pnl"])
+    all_pnl.to_csv(file_location + r"\all_summary.csv", index=False)
 
     # split into open
     open_df = all_pnl.loc[all_pnl["open_quantity"] != 0].reset_index(drop = True)
@@ -311,6 +311,7 @@ def exposure_breakdown(df = None):
     open_summary = df.copy()
     exposure_table = {
         "AMD" : ["US", 1.5],
+        "ASML": ["EU", 1.5],
         "ARM": ["US", 1.5],
         "INDA": ["IN", 1],
         "BABA": ["CH", 1],
@@ -341,7 +342,6 @@ def exposure_breakdown(df = None):
     except TypeError:
         print("Some ticker not in exposure_table, fix to see exposure breakdown")
         return None
-
     exposure_list = open_summary.exposure.unique()
     exposure_notional = []
     components = []
