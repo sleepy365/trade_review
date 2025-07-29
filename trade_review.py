@@ -5,7 +5,7 @@ import calendar, pytz
 import pandas as pd
 import numpy as np
 import os
-from trade_counter import connect_imap, count_trades
+from trade_counter import connect_imap, count_trades, sort_imap_id
 from credentials import export_folder
 import yfinance as yf
 pd.set_option('display.max_rows', 500)
@@ -455,7 +455,8 @@ def other_functions(all_trades = None, file_location = None):
             function_loop = False
         # count trades
         elif ticker_input == "1":
-            count_trades()
+            sorted_ids = sort_imap_id(file_location)
+            count_trades(sorted_ids)
         # show scalp summary
         elif ticker_input == "2":
             all_pnl = pd.read_csv(file_location+r"\all_summary.csv")

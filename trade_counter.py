@@ -15,7 +15,7 @@ def connect_imap():
     imap.login(imap_user, imap_pass)
     return imap
 
-# turns out imap.search does not return a sorted id list based on time of trade
+# turns out imap.search does not return a sorted id list based on email arrival time
 def sort_imap_id(file_location):
     # check if existing UID - date map exists
     if os.path.isfile(file_location+r"\uid_date_map.csv"):
