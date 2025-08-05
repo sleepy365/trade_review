@@ -276,6 +276,15 @@ def analyse_trades(all_trades = None):
     print(open_df, f"\nTotal Open PL is {round(all_pnl["open_pnl"].sum(), 1)}\n"
                    f"Total Scalp PL is {round(all_pnl["scalp_pnl"].sum(), 1)}")
     print(exposure_df)
+
+
+    # compute equity and XAU exposures and make some output prints about allocation
+    equity_exposure = exposure_df.loc[exposure_df["exposure"] != "XAU"].notional.sum()
+    if "XAU" in exposure_df["exposure"].unique():
+        xau_exposure = exposure_df.loc[exposure_df["exposure"] == "XAU"].notional.sum()
+        print(f"Equity exposure {round(equity_exposure, 1)}, XAU allocation {round(xau_exposure/equity_exposure*100, 1)}%")
+    else:
+        print(f"Equity exposure {round(equity_exposure, 1)}")
     print("-----------------------------------------------------------\n")
     return
 
@@ -347,7 +356,7 @@ def exposure_breakdown(df = None):
     components = []
     for exposure in exposure_list:
         temp = open_summary[open_summary["exposure"] == exposure]
-        exposure_notional.append(sum(temp["open_notional"]*temp["beta"]))
+        exposure_notional.append(round(sum(temp["open_notional"]*temp["beta"]), 1))
         components.append(temp["ticker"].unique())
     exposure_df = pd.DataFrame(
         {
