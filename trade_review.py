@@ -320,7 +320,7 @@ def exposure_breakdown(df = None):
     open_summary = df.copy()
     exposure_table = {
         "AMD" : ["US", 1.5],
-        "ASML": ["EU", 1.5],
+        "ASML": ["EU", 1],
         "ARM": ["US", 1.5],
         "INDA": ["IN", 1],
         "BABA": ["CH", 1],
