@@ -24,6 +24,8 @@ EXCLUSION_LIST = ["USD.HKD", "AUD.USD", "EUR.USD", "USD.CNH"]
 
 # Todo
 # in analyse trades, use pd.Dataframe on a list of dictionaries and get rid of the bulk .append usage which is stupid
+# for currencies, pull it from yfinance api aswell
+# be able to pull non US stk/fut like SEHK live prices
 
 class PositionKeeper:
     # Designed to keep track of unrealised and realised positions for a single ticker on a trade by trade basis
@@ -123,8 +125,9 @@ def store_trades(start_date = START_DATE, all_trades = None, file_location = Non
         print("No file location")
         return "0"
     currency_table = {
-        "EURUSD" : 1.09,
-        "USDCNH" : 7.20,
+        "EURUSD" : 1.15,
+        "USDCNH" : 7.19,
+        "USDHKD" : 7.85,
     }
     contract_size_table = {
         "ZT": 2000,
@@ -140,6 +143,7 @@ def store_trades(start_date = START_DATE, all_trades = None, file_location = Non
         "GBS" : 1000*currency_table["EURUSD"],
         "UC" : 100000/currency_table["USDCNH"],
         "CL" : 1000,
+        "9992" : 1/currency_table["USDHKD"],
     }
     imap = connect_imap()
     imap.select('Inbox')
@@ -277,7 +281,9 @@ def analyse_trades(all_trades = None):
                    f"Total Scalp PL is {round(all_pnl["scalp_pnl"].sum(), 1)}")
     print(exposure_df)
 
-
+    # early return if exposure_df didn't run
+    if exposure_df is None:
+        return
     # compute equity and XAU exposures and make some output prints about allocation
     equity_exposure = exposure_df.loc[exposure_df["exposure"] != "XAU"].notional.sum()
     if "XAU" in exposure_df["exposure"].unique():
@@ -327,6 +333,7 @@ def exposure_breakdown(df = None):
         "SMCI": ["US", 2],
         "TCEHY": ["CH", 1],
         "ASPI": ["US", 3],
+        "9992": ["CH", 1.8],
         "SOFR3": ["DV01", 1/10000],
         "GBS" : ["DV01", 1.86/10000],
         "NVDA" : ["US", 1.5],
