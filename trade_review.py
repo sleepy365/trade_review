@@ -26,6 +26,7 @@ EXCLUSION_LIST = ["USD.HKD", "AUD.USD", "EUR.USD", "USD.CNH"]
 # in analyse trades, use pd.Dataframe on a list of dictionaries and get rid of the bulk .append usage which is stupid
 # for currencies, pull it from yfinance api aswell
 # be able to pull non US stk/fut like SEHK live prices
+# when reading trades, read the exchange to decide what currency to use
 
 class PositionKeeper:
     # Designed to keep track of unrealised and realised positions for a single ticker on a trade by trade basis
@@ -144,6 +145,7 @@ def store_trades(start_date = START_DATE, all_trades = None, file_location = Non
         "UC" : 100000/currency_table["USDCNH"],
         "CL" : 1000,
         "9992" : 1/currency_table["USDHKD"],
+        "2423" : 1/currency_table["USDHKD"],
     }
     imap = connect_imap()
     imap.select('Inbox')
@@ -286,9 +288,10 @@ def analyse_trades(all_trades = None):
         return
     # compute equity and XAU exposures and make some output prints about allocation
     equity_exposure = exposure_df.loc[exposure_df["exposure"] != "XAU"].notional.sum()
+    total_exposure = exposure_df.notional.sum()
     if "XAU" in exposure_df["exposure"].unique():
         xau_exposure = exposure_df.loc[exposure_df["exposure"] == "XAU"].notional.sum()
-        print(f"Equity exposure {round(equity_exposure, 1)}, XAU allocation {round(xau_exposure/equity_exposure*100, 1)}%")
+        print(f"Equity exposure {round(equity_exposure, 1)}, XAU allocation {round(xau_exposure/total_exposure*100, 1)}%")
     else:
         print(f"Equity exposure {round(equity_exposure, 1)}")
     print("-----------------------------------------------------------\n")
@@ -308,7 +311,7 @@ def manual_trades(file_location):
         print(manual_df)
         if input("manual trades look like this, type y to confirm:\n").lower() == "y":
             print("inserting into all_trades.csv and removing from manual_trades.csv, rerun program")
-            df = pd.concat([manual_df, trade_df], ignore_index=True).sort_values(by="date_short", ascending=False,                                                              ignore_index=True)
+            df = pd.concat([manual_df, trade_df], ignore_index=True).sort_values(by="date_short", ascending=False, ignore_index=True)
             df["date_short"] = [x.strftime("%Y/%m/%d") for x in df["date_short"]]
             df.to_csv(file_location + r"\all_trades.csv", index=False)
             manual_df.to_csv(file_location + r"\backups\manual_trades" + f"{datetime.now().strftime("%Y_%m_%d")}"+ ".csv", index=False)
@@ -333,7 +336,8 @@ def exposure_breakdown(df = None):
         "SMCI": ["US", 2],
         "TCEHY": ["CH", 1],
         "ASPI": ["US", 3],
-        "9992": ["CH", 1.8],
+        "9992": ["CH", 1.5],
+        "2423": ["CH", 1],
         "SOFR3": ["DV01", 1/10000],
         "GBS" : ["DV01", 1.86/10000],
         "NVDA" : ["US", 1.5],
