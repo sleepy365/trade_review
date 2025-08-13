@@ -25,7 +25,6 @@ EXCLUSION_LIST = ["USD.HKD", "AUD.USD", "EUR.USD", "USD.CNH"]
 # Todo
 # in analyse trades, use pd.Dataframe on a list of dictionaries and get rid of the bulk .append usage which is stupid
 # for currencies, pull it from yfinance api aswell
-# be able to pull non US stk/fut like SEHK live prices
 # when reading trades, read the exchange to decide what currency to use
 
 class PositionKeeper:
@@ -287,11 +286,12 @@ def analyse_trades(all_trades = None):
     if exposure_df is None:
         return
     # compute equity and XAU exposures and make some output prints about allocation
-    equity_exposure = exposure_df.loc[exposure_df["exposure"] != "XAU"].notional.sum()
+    equity_exposure = exposure_df.loc[~exposure_df["exposure"].isin(["MM fund", "XAU"])].notional.sum()
     total_exposure = exposure_df.notional.sum()
     if "XAU" in exposure_df["exposure"].unique():
         xau_exposure = exposure_df.loc[exposure_df["exposure"] == "XAU"].notional.sum()
-        print(f"Equity exposure {round(equity_exposure, 1)}, XAU allocation {round(xau_exposure/total_exposure*100, 1)}%")
+        print(f"Equity beta {round(equity_exposure/total_exposure*100, 1)}%, "
+              f"XAU allocation {round(xau_exposure/total_exposure*100, 1)}%")
     else:
         print(f"Equity exposure {round(equity_exposure, 1)}")
     print("-----------------------------------------------------------\n")
@@ -336,7 +336,7 @@ def exposure_breakdown(df = None):
         "SMCI": ["US", 2],
         "TCEHY": ["CH", 1],
         "ASPI": ["US", 3],
-        "9992": ["CH", 1.5],
+        "9992": ["CH", 1.8],
         "2423": ["CH", 1],
         "SOFR3": ["DV01", 1/10000],
         "GBS" : ["DV01", 1.86/10000],
@@ -408,6 +408,11 @@ def get_last_price(ticker = None):
         else:
             print(f"Future not resolved for {ticker}, not marking to market")
             return None
+
+    # modify script to work for HK tickers
+    if len(ticker) == 4 and ticker.isdigit():
+        ticker = ticker + ".HK"
+
     stock_data = yf.download(ticker, period="3d", auto_adjust=True)
     try:
         return stock_data.tail(1)["Close"].values[0][0]*compound_factor
@@ -503,7 +508,6 @@ def other_functions(all_trades = None, file_location = None):
 
 if __name__ in "__main__":
     file_location = export_folder
-
     # perform all the analytics
     all_trades = find_trades(file_location)
     manual_trades(file_location)
