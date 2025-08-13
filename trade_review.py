@@ -24,7 +24,6 @@ EXCLUSION_LIST = ["USD.HKD", "AUD.USD", "EUR.USD", "USD.CNH"]
 
 # Todo
 # in analyse trades, use pd.Dataframe on a list of dictionaries and get rid of the bulk .append usage which is stupid
-# for currencies, pull it from yfinance api aswell
 # when reading trades, read the exchange to decide what currency to use
 
 class PositionKeeper:
@@ -124,10 +123,11 @@ def store_trades(start_date = START_DATE, all_trades = None, file_location = Non
     if file_location is None:
         print("No file location")
         return "0"
+    print("pulling FX")
     currency_table = {
-        "EURUSD" : 1.15,
-        "USDCNH" : 7.19,
-        "USDHKD" : 7.85,
+        "EURUSD" : get_last_price("EURUSD=X"),
+        "USDCNH" : get_last_price("USDCNH=X"),
+        "USDHKD" : get_last_price("USDHKD=X"),
     }
     contract_size_table = {
         "ZT": 2000,
