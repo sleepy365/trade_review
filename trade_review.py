@@ -123,12 +123,20 @@ def store_trades(start_date = START_DATE, all_trades = None, file_location = Non
     if file_location is None:
         print("No file location")
         return "0"
-    print("pulling FX")
     currency_table = {
         "EURUSD" : get_last_price("EURUSD=X"),
         "USDCNH" : get_last_price("USDCNH=X"),
         "USDHKD" : get_last_price("USDHKD=X"),
     }
+    currency_defaults = {
+        "EURUSD": 1.16,
+        "USDCNH": 7.18,
+        "USDHKD": 7.85,
+    }
+    for fx in currency_table.keys():
+        if currency_table.get(fx) is None:
+            currency_table[fx] = currency_defaults.get(fx)
+
     contract_size_table = {
         "ZT": 2000,
         "ZF": 1000,
@@ -143,8 +151,6 @@ def store_trades(start_date = START_DATE, all_trades = None, file_location = Non
         "GBS" : 1000*currency_table["EURUSD"],
         "UC" : 100000/currency_table["USDCNH"],
         "CL" : 1000,
-        "9992" : 1/currency_table["USDHKD"],
-        "2423" : 1/currency_table["USDHKD"],
     }
     imap = connect_imap()
     imap.select('Inbox')
@@ -154,7 +160,7 @@ def store_trades(start_date = START_DATE, all_trades = None, file_location = Non
     id_list = data[0].split()
     id_list.reverse()
     for id in id_list:
-        result, data = imap.fetch(id, '(RFC822)')
+        result, data = imap.fetch(id, '(RFC822.HEADER)')
         msg = email.message_from_string(data[0][1].decode('utf-8'))
 
 
@@ -177,6 +183,9 @@ def store_trades(start_date = START_DATE, all_trades = None, file_location = Non
         ticker = ticker[:-1].upper()
         if ticker.split()[0] in contract_size_table:
             contract_size = contract_size_table[ticker.split()[0]]
+        # constract size default for HK stocks
+        elif len(ticker) == 4 and ticker.isdigit():
+            contract_size = 1/currency_table["USDHKD"]
         else:
             contract_size = 1
         trade = pd.DataFrame({
