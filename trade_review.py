@@ -465,7 +465,9 @@ def ticker_history(all_trades = None):
     df["ticker"] = df.apply(lambda x: x.ticker.split()[0], axis = 1)
     df["date_long"] = df.apply(lambda x: datetime.strptime(x.date_short, "%Y/%m/%d"), axis =1)
     df.set_index("date_long", inplace = True, drop = True)
-    print(df.groupby([df.index.year, df.index.month])["ticker"].unique())
+    grouped_df = df.groupby([df.index.year, df.index.month])
+    print(grouped_df["ticker"].unique())
+    print(grouped_df.size())
 
 
 def other_functions(all_trades = None, file_location = None):
