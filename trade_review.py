@@ -391,7 +391,7 @@ def get_last_price(ticker = None):
     # return the most recent closing price of us stock or future
     ib_yf_mapping = {
         # "ticker" : ["yfinance=F", carry rate, expiry date]
-        "UC SEP'25": ["USDCNH=X" , -0.028, "2025/9/16"],
+        "UC DEC'25": ["USDCNH=X" , -0.024, "2025/12/15"],
         "ZT": ["ZT=F"],
         "ZF": ["ZF=F"],
         "ZN": ["ZN=F"],
@@ -422,7 +422,7 @@ def get_last_price(ticker = None):
     if len(ticker) == 4 and ticker.isdigit():
         ticker = ticker + ".HK"
 
-    stock_data = yf.download(ticker, period="3d", auto_adjust=True)
+    stock_data = yf.download(ticker, period="5d", auto_adjust=True)
     try:
         return stock_data.tail(1)["Close"].values[0][0]*compound_factor
     except:
