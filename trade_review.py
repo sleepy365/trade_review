@@ -281,28 +281,13 @@ def analyse_trades(all_trades = None):
     # split into open
     open_df = all_pnl.loc[all_pnl["open_quantity"] != 0].reset_index(drop = True)
 
-    # exposure breakdown of open trades
-    exposure_df = exposure_breakdown(open_df)
 
-    # save the csv locally
-    open_df.to_csv(file_location + r"\open_summary.csv", index=False)
 
     print(open_df, f"\nTotal Open PL is {round(all_pnl["open_pnl"].sum(), 1)}\n"
                    f"Total Scalp PL is {round(all_pnl["scalp_pnl"].sum(), 1)}")
-    print(exposure_df)
 
-    # early return if exposure_df didn't run
-    if exposure_df is None:
-        return
-    # compute equity and XAU exposures and make some output prints about allocation
-    equity_exposure = exposure_df.loc[~exposure_df["exposure"].isin(["MM fund", "XAU"])].notional.sum()
-    total_exposure = exposure_df.notional.sum()
-    if "XAU" in exposure_df["exposure"].unique():
-        xau_exposure = exposure_df.loc[exposure_df["exposure"] == "XAU"].notional.sum()
-        print(f"Equity beta {round(equity_exposure/total_exposure*100, 1)}%, "
-              f"XAU allocation {round(xau_exposure/total_exposure*100, 1)}%")
-    else:
-        print(f"Equity exposure {round(equity_exposure, 1)}")
+    # exposure breakdown of open trades
+    exposure_breakdown(open_df)
     print("-----------------------------------------------------------\n")
     return
 
@@ -363,6 +348,7 @@ def exposure_breakdown(df = None):
         "ZB": ["DV01", 10.8/10000],
         "UB": ["DV01", 16.2/10000],
         "GLD" :["XAU", 1],
+        "GLDM": ["XAU", 1],
         "CL" : ["CL", 1],
     }
     try:
@@ -373,18 +359,34 @@ def exposure_breakdown(df = None):
         return None
     exposure_list = open_summary.exposure.unique()
     exposure_notional = []
+    exspoure_nominal = []
     components = []
     for exposure in exposure_list:
         temp = open_summary[open_summary["exposure"] == exposure]
         exposure_notional.append(round(sum(temp["open_notional"]*temp["beta"]), 1))
+        exspoure_nominal.append(round(sum(temp["open_notional"]), 1))
         components.append(temp["ticker"].unique())
     exposure_df = pd.DataFrame(
         {
             "exposure" : exposure_list,
             "notional" : exposure_notional,
+            "nominal" : exspoure_nominal,
             "components" : components,
         }
     )
+    print(exposure_df)
+
+    # compute equity and XAU exposures and make some output prints about allocation
+    # allocations assume IBKR account holds minimal cash balances are inefficient. Rather just deploy long/short into SGOV.
+    equity_exposure = exposure_df.loc[~exposure_df["exposure"].isin(["MM fund", "XAU", "USDCNH", "DV01"])].notional.sum()
+    total_nominal = exposure_df.loc[~exposure_df["exposure"].isin(["USDCNH", "DV01"])].nominal.sum()
+    print(f"Equity beta {round(equity_exposure / total_nominal * 100, 1)}%, ")
+    if "XAU" in exposure_df["exposure"].unique():
+        xau_exposure = exposure_df.loc[exposure_df["exposure"] == "XAU"].notional.sum()
+        print(f"XAU allocation {round(xau_exposure/total_nominal*100, 1)}%")
+    if "MM fund" in exposure_df["exposure"].unique():
+        cash_exposure = exposure_df.loc[exposure_df["exposure"] == "MM fund"].notional.sum()
+        print(f"Cash allocation {round(cash_exposure/total_nominal*100, 1)}%")
     return exposure_df
 
 def get_last_price(ticker = None):
