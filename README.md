@@ -13,7 +13,7 @@ but now is integrated into trade_review as other functions.
 
 # Set up
 1. Setup IMAP for gmail and change the "Folder Size Limits" in IMAP access to unlimited (default is  1000)
-2. install python 3.1 for this project
+2. install python 3.13 for this project
 3. create credentials.py in the same format as credentials_template.py
 4. run trade_counter.py
 5. if all works, try run review_trades.py
