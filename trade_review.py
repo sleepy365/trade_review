@@ -326,6 +326,7 @@ def exposure_breakdown(df = None):
         "ASML": ["EU", 1],
         "ARM": ["US", 1.5],
         "INDA": ["IN", 1],
+        "EWY": ["KR", 1],
         "BABA": ["CH", 1],
         "SMCI": ["US", 2],
         "TCEHY": ["CH", 1],
