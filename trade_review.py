@@ -8,6 +8,8 @@ import os
 from trade_counter import connect_imap, count_trades, sort_imap_id
 from credentials import export_folder
 import yfinance as yf
+import matplotlib.pyplot as plt
+
 pd.set_option('display.max_rows', 500)
 pd.set_option('display.max_columns', None)  # Show all columns
 pd.set_option('display.width', 1000)  # Increase width to fit your screen
@@ -458,6 +460,36 @@ def get_ticker_trades(all_trades = None, ticker = None):
         print(f"\nTotal Open PL is {ticker_output_df["unrealised_pnl"].iloc[-1]}"
               f"\nTotal Scalp PL is {ticker_output_df["realised_pnl"].iloc[-1]}"
               f"\nTotal PL is {ticker_output_df["total_pnl"].iloc[-1]}\n")
+
+        # plot the PL and exposure over time
+        # Create the plot
+        ticker_output_df['timestamp'] = pd.to_datetime(ticker_output_df['timestamp'])
+        fig, ax1 = plt.subplots(figsize=(10, 6))
+
+        # Plot total_pnl on the left y-axis (ax1)
+        ax1.plot(ticker_output_df['timestamp'], ticker_output_df['total_pnl'], label='Total PNL', color='magenta', linewidth=2)
+        ax1.set_xlabel('Timestamp')
+        ax1.set_ylabel('PNL (USD)', color='magenta')
+        ax1.tick_params(axis='y', labelcolor='magenta')
+        ax1.grid(True)
+
+        # Create a second y-axis for exposure on the right
+        ax2 = ax1.twinx()
+        ax2.plot(ticker_output_df['timestamp'], ticker_output_df['exposure'], label='Exposure', color='grey', linewidth=2)
+        ax2.set_ylabel('Exposure (units)', color='grey')
+        ax2.tick_params(axis='y', labelcolor='grey')
+
+        # Add title and legend
+        plt.title(f'{ticker}')
+        fig.legend(loc='upper center', bbox_to_anchor=(0.5, -0.05), ncol=2)
+
+        # Rotate x-axis labels and adjust layout
+        plt.xticks(rotation=45)
+        fig.tight_layout()
+
+        # Show the plot
+        plt.show()
+
     else:
         print("Ticker not in unique tickers")
     return
