@@ -479,9 +479,9 @@ def get_ticker_trades(all_trades = None, ticker = None):
 
         # Create a second y-axis for exposure on the right
         ax2 = ax1.twinx()
-        ax2.plot(ticker_output_df['timestamp'], ticker_output_df['exposure'], label='Exposure', color='grey', linewidth=2)
-        ax2.set_ylabel('Exposure (units)', color='grey')
-        ax2.tick_params(axis='y', labelcolor='grey')
+        ax2.plot(ticker_output_df['timestamp'], ticker_output_df['exposure'], label='Exposure', color='green', linewidth=2)
+        ax2.set_ylabel('Exposure (units)', color='green')
+        ax2.tick_params(axis='y', labelcolor='green')
 
         # Add title and legend
         plt.title(f'{ticker}')
