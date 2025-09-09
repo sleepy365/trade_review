@@ -1,15 +1,12 @@
-import imaplib
 import email
 from datetime import datetime, timedelta
-import calendar, pytz
+import pytz
 import pandas as pd
-import numpy as np
 import os
 from trade_counter import connect_imap, count_trades, sort_imap_id
 from credentials import export_folder
 import yfinance as yf
 import matplotlib.pyplot as plt
-
 pd.set_option('display.max_rows', 500)
 pd.set_option('display.max_columns', None)  # Show all columns
 pd.set_option('display.width', 1000)  # Increase width to fit your screen

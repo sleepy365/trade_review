@@ -1,0 +1,21 @@
+[project]
+name = "trade-review"
+version = "0.1.0"
+description = ""
+authors = [
+    {name = "sleepy365",email = "jacksonlee365@gmail.com"}
+]
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "chardet (>=5.2.0,<6.0.0)",
+    "pytz (>=2025.2,<2026.0)",
+    "pandas (>=2.3.2,<3.0.0)",
+    "yfinance (>=0.2.65,<0.3.0)",
+    "matplotlib (>=3.10.6,<4.0.0)"
+]
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
