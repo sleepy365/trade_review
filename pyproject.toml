@@ -2,9 +2,6 @@
 name = "trade-review"
 version = "0.1.0"
 description = ""
-authors = [
-    {name = "sleepy365",email = "jacksonlee365@gmail.com"}
-]
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
