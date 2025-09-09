@@ -100,13 +100,17 @@ class PositionKeeper:
         self.market_value = self.exposure * self.last_price
         self.unrealised_pnl = (self.market_value - self.exposure * self.avg_price) * self.contract_size
 
-    def mark_to_market(self):
+    def mark_to_market(self, update_timestamp = False):
         # mark to market for open position otherwise do nth
         market_price = get_last_price(self.ticker)
         # all the error handling is done in get_last_price so it just returns None if error
         if market_price is not None:
             self.last_price = market_price
             self.update_stats()
+            # update_timestamp is for PL/Exposure plotting to be more chronological
+            if update_timestamp:
+                self.timestamp = datetime.now().strftime("%Y/%m/%d")
+
 
     def get_position_info(self):
         # nice script to return output in formatted way
@@ -245,7 +249,7 @@ def analyse_trades(all_trades = None):
             ticker_position.update_stats()
         # for open positions, mark to market
         if ticker_position.exposure != 0:
-            ticker_position.mark_to_market()
+            ticker_position.mark_to_market(update_timestamp=False)
 
         # retrieve the output of PositionKeeper
         ticker_output = ticker_position.get_position_info()
@@ -453,7 +457,7 @@ def get_ticker_trades(all_trades = None, ticker = None):
         # mark to market for open positions
         if ticker_position.exposure != 0:
             print("marking to market for open position")
-            ticker_position.mark_to_market()
+            ticker_position.mark_to_market(update_timestamp=True)
             ticker_output.append(ticker_position.get_position_info())
         ticker_output_df = pd.DataFrame(ticker_output)
         print(ticker_output_df)
@@ -484,7 +488,7 @@ def get_ticker_trades(all_trades = None, ticker = None):
         fig.legend(loc='upper center', bbox_to_anchor=(0.5, -0.05), ncol=2)
 
         # Rotate x-axis labels and adjust layout
-        plt.xticks(rotation=45)
+        ax1.tick_params(axis='x', rotation=45)
         fig.tight_layout()
 
         # Show the plot
