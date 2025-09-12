@@ -18,7 +18,7 @@ pd.set_option('display.max_colwidth', None)  # Show full content of each column
 
 START_DATE = datetime(2023, 1, 1)
 MIN_SCALP = 500
-EXCLUSION_LIST = ["USD.HKD", "AUD.USD", "EUR.USD", "USD.CNH"]
+EXCLUSION_LIST = ["USD.HKD", "AUD.USD", "EUR.USD", "USD.CNH", "CNH.HKD", "USD.JPY", "USD.CHF", "AUD.CNH"]
 
 
 # Todo
