@@ -14,11 +14,13 @@ but now is integrated into trade_review as other functions.
 # Set up    
 1. Setup IMAP for gmail and change the "Folder Size Limits" in IMAP access to unlimited (default is  1000)
 2. pip install poetry
-3. cd to trade_review/ and do poetry install
-4. create credentials.py in the same format as credentials_template.py
-5. run trade_counter.py
-6. if all works, try to run review_trades.py
-7. if all_trades.csv backups are available, just place it in the export location and the script should recognise it
+3. create a folder /trade_review and cd to it
+4. git clone https://github.com/sleepy365/trade_review.git
+5. poetry install
+6. create credentials.py in the same format as credentials_template.py
+7. run trade_counter.py
+8. if all works, try to run review_trades.py
+9. if all_trades.csv backups are available, just place it in the export location and the script should recognise it
 
 # Known Issues
 1. if you make a trade AFTER the script already found trades for the same day, it will not pull the new trades. Need to 
