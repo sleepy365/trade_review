@@ -4,7 +4,7 @@ import pytz
 import pandas as pd
 import os
 from trade_counter import connect_imap, count_trades, sort_imap_id
-from credentials import export_folder
+from credentials import EXPORT_FOLDER, START_DATE, MIN_SCALP, EXCLUSION_LIST
 import yfinance as yf
 import matplotlib.pyplot as plt
 pd.set_option('display.max_rows', 500)
@@ -12,13 +12,6 @@ pd.set_option('display.max_columns', None)  # Show all columns
 pd.set_option('display.width', 1000)  # Increase width to fit your screen
 pd.set_option('display.expand_frame_repr', False)  # Prevent wrapping
 pd.set_option('display.max_colwidth', None)  # Show full content of each column
-
-
-# Set Variables
-
-START_DATE = datetime(2023, 1, 1)
-MIN_SCALP = 500
-EXCLUSION_LIST = ["USD.HKD", "AUD.USD", "EUR.USD", "USD.CNH", "CNH.HKD", "USD.JPY", "USD.CHF", "AUD.CNH"]
 
 
 # Todo
@@ -528,7 +521,7 @@ def other_functions(all_trades = None, file_location = None):
         # count trades
         elif ticker_input == "1":
             sorted_ids = sort_imap_id(file_location)
-            count_trades(sorted_ids)
+            count_trades(sorted_ids, EXCLUSION_LIST)
         # show scalp summary
         elif ticker_input == "2":
             all_pnl = pd.read_csv(file_location+r"\all_summary.csv")
@@ -554,7 +547,7 @@ def other_functions(all_trades = None, file_location = None):
 
 
 if __name__ in "__main__":
-    file_location = export_folder
+    file_location = EXPORT_FOLDER
     # perform all the analytics
     all_trades = find_trades(file_location)
     manual_trades(file_location)

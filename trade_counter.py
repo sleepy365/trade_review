@@ -3,7 +3,7 @@ import email
 from datetime import datetime
 import pytz
 import calendar
-from credentials import imap_host, imap_user, imap_pass,export_folder
+from credentials import imap_host, imap_user, imap_pass, EXCLUSION_LIST, EXPORT_FOLDER
 import time
 import os
 import pandas as pd
@@ -61,8 +61,8 @@ def sort_imap_id(file_location):
     print(f"Email sorting took {round(end-start,0)} seconds")
     return uid_date_map["uid"].tolist()
 
-# counts trades and assumes sorted ids from newest trade to oldest trade
-def count_trades(sorted_ids):
+# counts trades and assumes sorted ids from most recent trade to oldest trade
+def count_trades(sorted_ids, exclusion_list):
     # look for trades After current month
     current_month = datetime.now().month
     current_year = datetime.now().year
@@ -93,10 +93,12 @@ def count_trades(sorted_ids):
         subject_split = subject.split()
         # append to trade counter if trade not at the same price (assuming placed by the same order)
         if not(float(subject_split[subject_split.index("@") + 1]) == last_price and subject_split[2] == last_ticker and date_long.date() == last_date):
-            unique_trades+=1
+            # also exclude trades if it is in exclusion_list, use case is spot FX trades which should not be counted
+            if subject_split[2] not in exclusion_list:
+                unique_trades+=1
         last_price,last_ticker, last_date = float(subject_split[subject_split.index("@") + 1]), subject_split[2], date_long.date()
         num_trades+=1
 if __name__ in "__main__":
-    file_location = export_folder
+    file_location = EXPORT_FOLDER
     sorted_ids = sort_imap_id(file_location)
-    count_trades(sorted_ids)
+    count_trades(sorted_ids, EXCLUSION_LIST)
