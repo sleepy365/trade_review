@@ -4,7 +4,8 @@ from email.header import decode_header
 from datetime import datetime
 import pytz
 import calendar
-from credentials import imap_host, imap_user, imap_pass, EXCLUSION_LIST, EXPORT_FOLDER
+from credentials import imap_host, imap_user, imap_pass
+from inputs import EXCLUSION_LIST
 
 import pandas as pd
 pd.set_option('display.max_rows', 500)
@@ -61,19 +62,20 @@ def get_all_trades():
         else:
             print(f"Skipping unexpected item: {item}")
     # Create a DataFrame
-    all_trades = pd.DataFrame(header_data, columns=['UID', 'Date', 'Subject'])
-    all_trades = all_trades.sort_values(by="Date", ascending=False)
-    return all_trades
+    raw_trades = pd.DataFrame(header_data, columns=['UID', 'Date', 'Subject'])
+    raw_trades = raw_trades.sort_values(by="Date", ascending=False)
+    raw_trades = raw_trades.reset_index(drop=True)
+    return raw_trades
 
 # counts trades and assumes sorted ids from most recent trade to oldest trade
-def count_trades(all_trades = pd.DataFrame(), exclusion_list = []):
+def count_trades(raw_trades = pd.DataFrame(), exclusion_list = []):
     # look for trades After current month
     current_month = datetime.now().month
     current_year = datetime.now().year
 
     num_trades,unique_trades = 0, 0
     last_price, last_ticker, last_date = 0, 0, 0
-    for index, row in all_trades.iterrows():
+    for index, row in raw_trades.iterrows():
         date_long = row.loc["Date"]
         subject = row.loc["Subject"]
 
@@ -94,5 +96,5 @@ def count_trades(all_trades = pd.DataFrame(), exclusion_list = []):
         num_trades+=1
 
 if __name__ in "__main__":
-    all_trades = get_all_trades()
-    count_trades(all_trades, EXCLUSION_LIST)
+    raw_trades = get_all_trades()
+    count_trades(raw_trades, EXCLUSION_LIST)

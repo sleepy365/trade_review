@@ -3,8 +3,8 @@ from datetime import datetime, timedelta
 import pytz
 import pandas as pd
 import os
-from trade_counter import connect_imap, count_trades, sort_imap_id
-from credentials import EXPORT_FOLDER, START_DATE, MIN_SCALP, EXCLUSION_LIST
+from trade_counter import count_trades, get_all_trades
+from inputs import exposure_table,currency_table, contract_size_table, EXCLUSION_LIST, EXPORT_FOLDER, MIN_SCALP
 import yfinance as yf
 import matplotlib.pyplot as plt
 pd.set_option('display.max_rows', 500)
@@ -16,7 +16,6 @@ pd.set_option('display.max_colwidth', None)  # Show full content of each column
 
 # Todo
 # in analyse trades, use pd.Dataframe on a list of dictionaries and get rid of the bulk .append usage which is stupid
-# when reading trades, read the exchange to decide what currency to use
 
 class PositionKeeper:
     # Designed to keep track of unrealised and realised positions for a single ticker on a trade by trade basis
@@ -99,7 +98,7 @@ class PositionKeeper:
             self.update_stats()
             # update_timestamp is for PL/Exposure plotting to be more chronological
             if update_timestamp:
-                self.timestamp = datetime.now().strftime("%Y/%m/%d")
+                self.timestamp = datetime.now().astimezone(pytz.timezone("Asia/Hong_Kong"))
 
 
     def get_position_info(self):
@@ -114,62 +113,28 @@ class PositionKeeper:
             "unrealised_pnl": round(float(self.unrealised_pnl),2),
             "total_pnl": round(float(self.realised_pnl + self.unrealised_pnl),2)
         }
+def get_contract_size(contract_size_table = dict(), currency_table = dict(), ticker = ""):
+    if ticker.split()[0] in contract_size_table:
+        contract_size = contract_size_table[ticker.split()[0]]
+    # contract size default for HK stocks
+    elif len(ticker) == 4 and ticker.isdigit():
+        contract_size = 1 / currency_table["USDHKD"]
+    else:
+        contract_size = 1
+    return contract_size
 
-def store_trades(start_date = START_DATE, all_trades = None, file_location = None):
+def store_trades(raw_trades = pd.DataFrame(), file_location = None):
     if file_location is None:
-        print("No file location")
-        return "0"
-    currency_table = {
-        "EURUSD" : get_last_price("EURUSD=X"),
-        "USDCNH" : get_last_price("USDCNH=X"),
-        "USDHKD" : get_last_price("USDHKD=X"),
-    }
-    currency_defaults = {
-        "EURUSD": 1.16,
-        "USDCNH": 7.18,
-        "USDHKD": 7.85,
-    }
-    for fx in currency_table.keys():
-        if currency_table.get(fx) is None:
-            currency_table[fx] = currency_defaults.get(fx)
+        print("No file location, please add to credentials.py")
+        exit()
 
-    contract_size_table = {
-        "ZT": 2000,
-        "ZF": 1000,
-        "ZN": 1000,
-        "TN": 1000,
-        "ZB": 1000,
-        "UB": 1000,
-        "MES" : 5,
-        "M2K" : 5,
-        "MNQ" : 2,
-        "SOFR3" : 2500,
-        "GBS" : 1000*currency_table["EURUSD"],
-        "UC" : 100000/currency_table["USDCNH"],
-        "CL" : 1000,
-    }
-    imap = connect_imap()
-    imap.select('Inbox')
-    result, data = imap.search(None, 'FROM "IB Trading Assistant"' )
-    #fetch all trades on the account, store in a csv, and on reruns of the script, just append to the csv instead of recreating the database
+    # initialise all_trades
+    all_trades = pd.DataFrame()
+    for index, row in raw_trades.iterrows():
+        uid = row.loc["UID"]
+        date_long = row.loc["Date"]
+        subject = row.loc["Subject"]
 
-    id_list = data[0].split()
-    id_list.reverse()
-    for id in id_list:
-        result, data = imap.fetch(id, '(RFC822.HEADER)')
-        msg = email.message_from_string(data[0][1].decode('utf-8'))
-
-
-        # remove the english of timezone to input into timezone aware datetime object
-        new_msg = " ".join(msg['Date'].split(" ")[:-1])
-        date_long = datetime.strptime(new_msg, "%a, %d %b %Y %H:%M:%S %z")
-        date_long = date_long.astimezone(pytz.timezone("Asia/Hong_Kong"))
-
-        subject = str(email.header.make_header(email.header.decode_header(msg['Subject'])))
-        if datetime(date_long.year, date_long.month, date_long.day) < start_date:
-            break
-        # create the trade item
-        print(date_long, subject)
         subject_split = subject.split()
         first_at_index = next(i for i, item in enumerate(subject_split) if '@' in item)
         quantity = round((1 if subject_split[0] == "BOUGHT" else -1) * float(subject_split[1].replace(",","")),0)
@@ -177,52 +142,55 @@ def store_trades(start_date = START_DATE, all_trades = None, file_location = Non
         for x in range(2, first_at_index):
             ticker += subject_split[x] + " "
         ticker = ticker[:-1].upper()
-        if ticker.split()[0] in contract_size_table:
-            contract_size = contract_size_table[ticker.split()[0]]
-        # constract size default for HK stocks
-        elif len(ticker) == 4 and ticker.isdigit():
-            contract_size = 1/currency_table["USDHKD"]
-        else:
-            contract_size = 1
+        contract_size = get_contract_size(contract_size_table, currency_table, ticker)
         trade = pd.DataFrame({
-            "date_short": [date_long.strftime("%Y/%m/%d")],
+            "UID": [uid],
+            "date_long": [date_long],
             "ticker": [ticker],
             "quantity": [quantity],
             "price": [float(subject_split[subject_split.index("@") + 1])],
             "contract_size" : [contract_size],
-            "trade_type": "AUTO",
         })
 
-        if all_trades is None:
+        if len(all_trades) == 0:
             all_trades = trade
         else:
-            all_trades = pd.concat([trade,all_trades], ignore_index = True)
-    all_trades["temp"] = [datetime.strptime(date, "%Y/%m/%d") for date in all_trades.date_short]
-    all_trades = all_trades.sort_values(by=["temp"], ascending=False, ignore_index=True)
-    all_trades = all_trades.drop(columns = ["temp"])
+            all_trades = pd.concat([all_trades,trade], ignore_index = True)
 
+    # all_trades generated from get_all_trades is already sorted from the first trade being the latest
     all_trades.to_csv(file_location + r"\all_trades.csv", index = False)
     all_trades.to_csv(file_location + r"\backups\all_trades"+f"{datetime.now().strftime("%Y_%m_%d")}"+ ".csv", index=False)
+
+    print(f"Found {len(all_trades)} trade confirmations up to {all_trades["date_long"][0]}")
     return all_trades
 
-def find_trades(file_location):
-    if os.path.isfile(file_location+r"\all_trades.csv"):
-        all_trades = pd.read_csv(file_location+r"\all_trades.csv")
-        last_trade_date = datetime.strptime(all_trades.date_short.iloc[0],"%Y/%m/%d")
-        num_trades = len(all_trades)
-        print(f"trade database found with {num_trades} trades up to {last_trade_date}\n"
-              f"Checking for new trades")
+def manual_trades(all_trades = pd.DataFrame(), file_location = r""):
+    # check for manual trade file, inserting trades into the all_trades csv of trade_type = manual
+    if os.path.isfile(file_location + r"\manual_trades.csv"):
+        manual_df = pd.read_csv(file_location + r"\manual_trades.csv")
+        if len(manual_df) == 0:
+            return all_trades
+        print(f"Found manual_trades.csv with {len(manual_df)} trades, injecting with UID 0")
+        # add columns to fit all_trades
+        first_trade_date = all_trades["date_long"].iloc[-1]
+        manual_df["date_long"] = first_trade_date
+        manual_df["UID"] = 0
+        manual_df["contract_size"] = manual_df.apply(
+            lambda x: get_contract_size(contract_size_table, currency_table, x.ticker), axis=1)
 
-        all_trades = store_trades(last_trade_date+timedelta(days=1), all_trades, file_location)
-        print(f"found {len(all_trades)-num_trades} new trades")
-    else:
-        print("no trades found, creating database")
-        all_trades = store_trades(all_trades = None,file_location = file_location)
-        print(f"{len(all_trades)} new trades have been added to the trade database")
+        # concat the manual trades with all trades and dump
+        all_trades = pd.concat([all_trades, manual_df], ignore_index=True).sort_values(by="date_long", ascending=False)
+        all_trades = all_trades.reset_index(drop=True)
+
+        # redump the new all_trades which includes manual_trades
+        all_trades.to_csv(file_location + r"\all_trades.csv", index=False)
+        manual_df.to_csv(file_location + r"\backups\manual_trades" + f"{datetime.now().strftime("%Y_%m_%d")}"+ ".csv", index=False)
+
     return all_trades
+
 
 # need to add a way for my script to differentiate between closed positions and open positions, in chronological order
-def analyse_trades(all_trades = None):
+def analyse_trades(all_trades = pd.DataFrame(), file_location = r""):
     tickers = all_trades.ticker.unique()
     tickers = [ticker for ticker in tickers if ticker not in EXCLUSION_LIST]
     all_tickers, open_pnl, close_pnl, open_quantity, open_price, open_notional, last_price, last_date = [],[],[],[],[],[],[],[]
@@ -234,7 +202,7 @@ def analyse_trades(all_trades = None):
         ticker_position = PositionKeeper(ticker, contract_size)
         for index, row in ticker_trades.iterrows():
             # input each trade into PositionKeeper line by line
-            ticker_position.add_trade(row.date_short, row.price, row.quantity)
+            ticker_position.add_trade(row.date_long, row.price, row.quantity)
             # recompute unrealised and realised pnl based on market value
             ticker_position.update_stats()
         # for open positions, mark to market
@@ -282,72 +250,15 @@ def analyse_trades(all_trades = None):
     print(open_df, f"\nTotal Open PL is {round(all_pnl["open_pnl"].sum(), 1)}\n"
                    f"Total Scalp PL is {round(all_pnl["scalp_pnl"].sum(), 1)}")
 
-    # exposure breakdown of open trades
-    exposure_breakdown(open_df)
-    print("-----------------------------------------------------------\n")
-    return
+    return  open_df
 
 
-def manual_trades(file_location):
-    # check for manual trade file, inserting trades into the all_trades csv of trade_type = manual
-    if os.path.isfile(file_location + r"\manual_trades.csv") & os.path.isfile(file_location + r"\all_trades.csv"):
-        manual_df = pd.read_csv(file_location + r"\manual_trades.csv")
-        trade_df = pd.read_csv(file_location + r"\all_trades.csv")
-        if len(manual_df) == 0:
-            return
-        print(f"found manual_trades.csv with {len(manual_df)} trades")
-        manual_df["date_short"] = [datetime.strptime(date, "%d/%m/%Y") for date in manual_df["date_short"]]
-        trade_df["date_short"] = [datetime.strptime(date, "%Y/%m/%d") for date in trade_df["date_short"]]
-        print(manual_df)
-        if input("manual trades look like this, type y to confirm:\n").lower() == "y":
-            print("inserting into all_trades.csv and removing from manual_trades.csv, rerun program")
-            df = pd.concat([manual_df, trade_df], ignore_index=True).sort_values(by="date_short", ascending=False, ignore_index=True)
-            df["date_short"] = [x.strftime("%Y/%m/%d") for x in df["date_short"]]
-            df.to_csv(file_location + r"\all_trades.csv", index=False)
-            manual_df.to_csv(file_location + r"\backups\manual_trades" + f"{datetime.now().strftime("%Y_%m_%d")}"+ ".csv", index=False)
-            manual_df = manual_df[0:0]
-            manual_df.to_csv(file_location + r"\manual_trades.csv", index=False)
-            exit()
-        else:
-            print("nothing done")
-    return
 
 
-def exposure_breakdown(df = None):
+def exposure_breakdown(open_pos = pd.DataFrame(), exposure_table = dict()):
     # a nice learning point from this line is that direct assignment of dataframes in python does not create a new dataframe,
     # it actually passes the underlying objects of the initial dataframe into the new object
-    open_summary = df.copy()
-    exposure_table = {
-        "AMD" : ["US", 1.5],
-        "ASML": ["EU", 1],
-        "ARM": ["US", 1.5],
-        "INDA": ["IN", 1],
-        "EWY": ["KR", 1],
-        "BABA": ["CH", 1],
-        "SMCI": ["US", 2],
-        "TCEHY": ["CH", 1],
-        "ASPI": ["US", 3],
-        "9992": ["CH", 1.8],
-        "2423": ["CH", 1],
-        "SOFR3": ["DV01", 1/10000],
-        "GBS" : ["DV01", 1.86/10000],
-        "NVDA" : ["US", 1.5],
-        "SGOV": ["MM fund", 1],
-        "SPY" : ["US", 1],
-        "VOO": ["US", 1],
-        "QQQ": ["US", 1.3],
-        "QQQM": ["US", 1.3],
-        "UC" : ["USDCNH", 1],
-        "ZT": ["DV01", 1.8/10000],
-        "ZF": ["DV01", 3.8/10000],
-        "ZN": ["DV01", 5.8/10000],
-        "TN": ["DV01", 7.7/10000],
-        "ZB": ["DV01", 10.8/10000],
-        "UB": ["DV01", 16.2/10000],
-        "GLD" :["XAU", 1],
-        "GLDM": ["XAU", 1],
-        "CL" : ["CL", 1],
-    }
+    open_summary = open_pos.copy()
     try:
         open_summary["exposure"] = open_summary.apply(lambda x: exposure_table.get(x.ticker.split()[0])[0], axis=1)
         open_summary["beta"] = open_summary.apply(lambda x: exposure_table.get(x.ticker.split()[0])[1], axis=1)
@@ -356,18 +267,18 @@ def exposure_breakdown(df = None):
         return None
     exposure_list = open_summary.exposure.unique()
     exposure_notional = []
-    exspoure_nominal = []
+    exposure_nominal = []
     components = []
     for exposure in exposure_list:
         temp = open_summary[open_summary["exposure"] == exposure]
         exposure_notional.append(round(sum(temp["open_notional"]*temp["beta"]), 1))
-        exspoure_nominal.append(round(sum(temp["open_notional"]), 1))
+        exposure_nominal.append(round(sum(temp["open_notional"]), 1))
         components.append(temp["ticker"].unique())
     exposure_df = pd.DataFrame(
         {
             "exposure" : exposure_list,
             "notional" : exposure_notional,
-            "nominal" : exspoure_nominal,
+            "nominal" : exposure_nominal,
             "components" : components,
         }
     )
@@ -377,6 +288,7 @@ def exposure_breakdown(df = None):
     # allocations assume IBKR account holds minimal cash balances are inefficient. Rather just deploy long/short into SGOV.
     equity_exposure = exposure_df.loc[~exposure_df["exposure"].isin(["MM fund", "XAU", "USDCNH", "DV01"])].notional.sum()
     total_nominal = exposure_df.loc[~exposure_df["exposure"].isin(["USDCNH", "DV01"])].nominal.sum()
+    print("-----------------------------------------------------------")
     print(f"Equity beta {round(equity_exposure / total_nominal * 100, 1)}%, ")
     if "XAU" in exposure_df["exposure"].unique():
         xau_exposure = exposure_df.loc[exposure_df["exposure"] == "XAU"].notional.sum()
@@ -384,6 +296,7 @@ def exposure_breakdown(df = None):
     if "MM fund" in exposure_df["exposure"].unique():
         cash_exposure = exposure_df.loc[exposure_df["exposure"] == "MM fund"].notional.sum()
         print(f"Cash allocation {round(cash_exposure/total_nominal*100, 1)}%")
+    print("-----------------------------------------------------------")
     return exposure_df
 
 def get_last_price(ticker = None):
@@ -429,7 +342,7 @@ def get_last_price(ticker = None):
         print(stock_data)
         return None
 
-def get_ticker_trades(all_trades = None, ticker = None):
+def get_ticker_trades(all_trades = pd.DataFrame(), ticker = ""):
     unique_tickers = all_trades["ticker"].unique()
     # first try to resolve the ticker
     ticker = ticker.upper()
@@ -441,7 +354,7 @@ def get_ticker_trades(all_trades = None, ticker = None):
         # feed in trades
         ticker_output = []
         for index, row in ticker_trades.iterrows():
-            ticker_position.add_trade(row.date_short, row.price, row.quantity)
+            ticker_position.add_trade(row.date_long, row.price, row.quantity)
             ticker_position.update_stats()
             ticker_output.append(ticker_position.get_position_info())
         # mark to market for open positions
@@ -457,7 +370,6 @@ def get_ticker_trades(all_trades = None, ticker = None):
 
         # plot the PL and exposure over time
         # Create the plot
-        ticker_output_df['timestamp'] = pd.to_datetime(ticker_output_df['timestamp'])
         fig, ax1 = plt.subplots(figsize=(10, 6))
 
         # Plot total_pnl on the left y-axis (ax1)
@@ -488,15 +400,13 @@ def get_ticker_trades(all_trades = None, ticker = None):
         print("Ticker not in unique tickers")
     return
 
-def ticker_history(all_trades = None):
+def ticker_history(all_trades = pd.DataFrame()):
     df = all_trades.copy()
     df = df[~df["ticker"].isin(EXCLUSION_LIST)]
     df["ticker"] = df.apply(lambda x: x.ticker.split()[0], axis = 1)
-    df["date_long"] = df.apply(lambda x: datetime.strptime(x.date_short, "%Y/%m/%d"), axis =1)
     df.set_index("date_long", inplace = True, drop = True)
     grouped_df = df.groupby([df.index.year, df.index.month])
     print(grouped_df["ticker"].unique())
-    print(grouped_df.size())
 
 
 def other_functions(all_trades = None, file_location = None):
@@ -513,15 +423,14 @@ def other_functions(all_trades = None, file_location = None):
             "\t1 to count trades in the current month\n"
             "\t2 to see trade summary per ticker\n"
             "\t3 to see history of tickers traded\n"
-            "\t4 to wipe the most recent day of recorded trades\n"
         )
         # no command was given so exit
         if ticker_input == "":
             function_loop = False
         # count trades
         elif ticker_input == "1":
-            sorted_ids = sort_imap_id(file_location)
-            count_trades(sorted_ids, EXCLUSION_LIST)
+            raw_trades = get_all_trades()
+            count_trades(raw_trades, EXCLUSION_LIST)
         # show scalp summary
         elif ticker_input == "2":
             all_pnl = pd.read_csv(file_location+r"\all_summary.csv")
@@ -529,30 +438,22 @@ def other_functions(all_trades = None, file_location = None):
         # show ticker history
         elif ticker_input == "3":
             ticker_history(all_trades)
-        # delete most recent day of recorded trades to repull correct trades on next script launch
-        elif ticker_input == "4":
-            last_trade_date = all_trades.date_short.iloc[0]
-            all_trades = all_trades[all_trades["date_short"] != last_trade_date].reset_index(drop = True)
-            print("new trade database looks like this")
-            print(all_trades.head(10))
-            all_trades.to_csv(file_location + r"\all_trades.csv", index=False)
-            all_trades.to_csv(
-                file_location + r"\backups\all_trades" + f"{datetime.now().strftime("%Y_%m_%d")}" + ".csv", index=False)
-            function_loop = False
         # show trades associated with the inputed ticker
         else:
             get_ticker_trades(all_trades, ticker_input)
-    print("trade review finished, exiting.")
+    print("Thanks for taking time to review trades, exiting")
     return
 
 
 if __name__ in "__main__":
-    file_location = EXPORT_FOLDER
+    export_location = EXPORT_FOLDER
     # perform all the analytics
-    all_trades = find_trades(file_location)
-    manual_trades(file_location)
-    analyse_trades(all_trades)
-    other_functions(all_trades, file_location)
+    raw_trades = get_all_trades()
+    clean_trades = store_trades(raw_trades, export_location)
+    all_trades = manual_trades(clean_trades, export_location)
+    open_summary = analyse_trades(all_trades, export_location)
+    exposure_df = exposure_breakdown(open_summary, exposure_table)
+    other_functions(all_trades, export_location)
 
 
 

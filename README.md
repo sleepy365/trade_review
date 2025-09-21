@@ -17,13 +17,12 @@ but now is integrated into trade_review as other functions.
 3. create a folder /trade_review and cd to it
 4. git clone https://github.com/sleepy365/trade_review.git
 5. poetry install
-6. create credentials.py in the same format as credentials_template.py
-7. run trade_counter.py
-8. if all works, try to run review_trades.py
-9. if all_trades.csv backups are available, just place it in the export location and the script should recognise it
+6. create credentials.py in the same format as inputs_template.py
+7. create inputs.py in the same format as credentials_template.py
+8. run trade_counter.py
+9. if all works, try to run review_trades.py
+10. if all_trades.csv backups are available, just place it in the export location and the script should recognise it
 
 # Known Issues
-1. if you make a trade AFTER the script already found trades for the same day, it will not pull the new trades. Need to 
-use function 4 to wipe recent day trades and rerun the script
-2. There was a 3-month period of time in 2024 where IBKR was misconfigured to not give trade confirmations, this lead to
-a gap in recorded trades which I manually filled using manual_trades() functionality
+1. There was a 3-month period of time in 2024 where IBKR was misconfigured to not give trade confirmations,  
+can fix this issue by injecting manual_trades.csv in the manual_example.csv provided
