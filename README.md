@@ -3,8 +3,8 @@ Script that pulls trade confirmations from IBKR, stores them and analyses them. 
 recording for personal wealth management and to resolve the limitations of the IBKR GUI. It achieves the following:
 1. Queries trade confirmations from IBKR which get sent to my gmail
 2. Stores trade confirmations into a trade database which can be accessed, and backed up.
-3. Portfolio analysis for exposure management, position management, open positon PL, scalp PL breakdowns, and trades by ticker
-4. Also has functions to read in manual_trades incase trade confirmation was missing
+3. Portfolio analysis for exposure management, position management, open position PL, scalp PL breakdowns, and trades by ticker
+4. Also has functions to read in manual trades.csv incase trade confirmation was missing
 
 # trade_counter
 Script that pulls trade confirmations from IBKR and presents timestamps and trade content. This tool counts the number executed 

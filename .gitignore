@@ -1,5 +1,9 @@
 Ignore exports folder and all contents
-/exports/
+/exports/backups
+/exports/important_backups
+/exports/all_trades.csv
+/exports/all_summary.csv
+/exports/manual_trades.csv
 /credentials.py
 /inputs.py
 /sleepy.ico
