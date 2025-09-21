@@ -1,6 +1,6 @@
 # trade_review 
-Script that pulls trade confirmations from IBKR, stores them and analyses them. I started this project for better trade
-recording for personal wealth management and to resolve the limitations of the IBKR GUI. It achieves the following:
+Script that pulls trade confirmations from IBKR, stores them and analyses them. I started this project for 
+personal wealth management and to resolve the limitations of the IBKR GUI. It achieves the following:
 1. Queries trade confirmations from IBKR which get sent to my gmail
 2. Stores trade confirmations into a trade database which can be accessed, and backed up.
 3. Portfolio analysis for exposure management, position management, open position PL, scalp PL breakdowns, and trades by ticker
@@ -21,8 +21,9 @@ but now is integrated into trade_review as other functions.
 7. create inputs.py in the same format as credentials_template.py
 8. run trade_counter.py
 9. if all works, try to run review_trades.py
-10. if all_trades.csv backups are available, just place it in the export location and the script should recognise it
 
-# Known Issues
-1. There was a 3-month period of time in 2024 where IBKR was misconfigured to not give trade confirmations,  
-can fix this issue by injecting manual_trades.csv in the manual_example.csv provided
+# Use case
+1. Can run the trade_review.py to track exposures across regions, FI and cash equivalents.
+2. Can use the get_ticker_trades function to see unrealised, realised PL, exposure per trade for any ticker. 
+3. There was a 3-month period of time in 2024 where IBKR was misconfigured to not give trade confirmations, I have fixed
+exports/manual_trades.csv which resolves this issue.
