@@ -1,12 +1,17 @@
 import imaplib
 import email
+from email.header import decode_header
 from datetime import datetime
 import pytz
 import calendar
 from credentials import imap_host, imap_user, imap_pass, EXCLUSION_LIST, EXPORT_FOLDER
-import time
-import os
+
 import pandas as pd
+pd.set_option('display.max_rows', 500)
+pd.set_option('display.max_columns', None)  # Show all columns
+pd.set_option('display.width', 1000)  # Increase width to fit your screen
+pd.set_option('display.expand_frame_repr', False)  # Prevent wrapping
+pd.set_option('display.max_colwidth', None)  # Show full content of each column
 
 def connect_imap():
     # connect to host using SSL
@@ -15,76 +20,65 @@ def connect_imap():
     imap.login(imap_user, imap_pass)
     return imap
 
-# turns out imap.search does not return a sorted id list based on email arrival time
-def sort_imap_id(file_location):
-    # check if existing UID - date map exists
-    if os.path.isfile(file_location+r"\uid_date_map.csv"):
-        uid_date_map = pd.read_csv(file_location+r"\uid_date_map.csv", parse_dates=["date_long"])
-        # Convert DataFrame to dictionary for faster lookup
-        uid_date_map = dict(zip(uid_date_map['uid'], uid_date_map['date_long']))
-    else:
-        uid_date_map = {}
-
-    # time the sorting cuz it takes a while if no existing uid map
-    start = time.time()
+def get_all_trades():
     imap = connect_imap()
     imap.select('Inbox')
-    result, data = imap.search(None, 'FROM "IB Trading Assistant"' )
+    result, email_bytes = imap.search(None, 'FROM "IB Trading Assistant"')
+    email_ids = [item.decode('utf-8') for item in email_bytes]
+    fetch_ids = ','.join(email_ids[0].split())
 
-    # for each id, pull the email header for the date of trade
-    id_list = data[0].split()
-    date_list = []
-    for id in id_list:
-        # search the existing map for a match
-        non_byte_id = str(id)
-        if non_byte_id in uid_date_map:
-            date_list.append(uid_date_map[non_byte_id])
-        else:
-            result, data = imap.fetch(id, '(RFC822.HEADER)')
-            raw_email = data[0][1]                                 # Returns a byte
-            msg = email.message_from_string(raw_email.decode('utf-8'))
 
-            # remove the english of timezone to input into timezone aware datetime object
-            new_msg = " ".join(msg['Date'].split(" ")[:-1])
-            date_long = datetime.strptime(new_msg, "%a, %d %b %Y %H:%M:%S %z")
+    result, data = imap.fetch(fetch_ids, '(RFC822.HEADER)')
+    header_data = []
+    for item in data:
+        # Check for the expected tuple format with header data
+        if isinstance(item, tuple) and len(item) == 2 and b'(RFC822.HEADER' in item[0]:
+            # Extract message ID and header bytes
+            msg_id_part, header_bytes = item
+            # Message ID is the part before ' (RFC822.HEADER'
+            msg_id = msg_id_part.decode().split(' (')[0]
+
+            # Parse the header bytes
+            msg = email.message_from_bytes(header_bytes)
+
+            # Extract Date
+            date_value = " ".join(msg['Date'].split(" ")[:-1])
+            date_long = datetime.strptime(date_value, "%a, %d %b %Y %H:%M:%S %z")
             date_long = date_long.astimezone(pytz.timezone("Asia/Hong_Kong"))
-            date_list.append(date_long)
-    # create a dataframe, sort it based on date long and save as new map
-    uid_date_map = pd.DataFrame({
-        "uid" : id_list,
-        "date_long" : date_list,
-    })
-    uid_date_map = uid_date_map.sort_values(by="date_long", ascending=False).reset_index(drop=True)
-    uid_date_map.to_csv(file_location + r"\uid_date_map.csv", index=False)
 
-    end = time.time()
-    print(f"Email sorting took {round(end-start,0)} seconds")
-    return uid_date_map["uid"].tolist()
+            # extract subject
+            subject = str(email.header.make_header(email.header.decode_header(msg['Subject'])))
+
+            # Dictionary for Date and Subject and add to the header data
+            email_headers = {
+                'UID': msg_id,
+                'Date': date_long,
+                'Subject': subject}
+            header_data.append(email_headers)
+        # Skip closing parentheses or unexpected items
+        elif item == b')':
+            continue
+        else:
+            print(f"Skipping unexpected item: {item}")
+    # Create a DataFrame
+    all_trades = pd.DataFrame(header_data, columns=['UID', 'Date', 'Subject'])
+    all_trades = all_trades.sort_values(by="Date", ascending=False)
+    return all_trades
 
 # counts trades and assumes sorted ids from most recent trade to oldest trade
-def count_trades(sorted_ids, exclusion_list):
+def count_trades(all_trades = pd.DataFrame(), exclusion_list = []):
     # look for trades After current month
     current_month = datetime.now().month
     current_year = datetime.now().year
 
-    # count trades
-    imap = connect_imap()
-    imap.select('Inbox')
     num_trades,unique_trades = 0, 0
     last_price, last_ticker, last_date = 0, 0, 0
-    for id in sorted_ids:
-        result, data = imap.fetch(id, '(RFC822.HEADER)')
-        raw_email = data[0][1]                                 # Returns a byte
-        msg = email.message_from_string(raw_email.decode('utf-8'))
-
-        # remove the english of timezone to input into timezone aware datetime object
-        new_msg = " ".join(msg['Date'].split(" ")[:-1])
-        date_long = datetime.strptime(new_msg, "%a, %d %b %Y %H:%M:%S %z")
-        date_long = date_long.astimezone(pytz.timezone("Asia/Hong_Kong"))
+    for index, row in all_trades.iterrows():
+        date_long = row.loc["Date"]
+        subject = row.loc["Subject"]
 
         # get this month's trades
-        subject = str(email.header.make_header(email.header.decode_header(msg['Subject'])))
-        if (date_long.month < current_month) | (date_long.year <current_year) :
+        if (date_long.month < current_month) or (date_long.year <current_year) :
             trade = "trade" if (num_trades - unique_trades) == 1 else "trades"
             print(f"There are {unique_trades} unique trades found in {calendar.month_name[current_month]} {current_year}."
                   f"\n{num_trades - unique_trades} {trade} have been filtered out.")
@@ -98,7 +92,7 @@ def count_trades(sorted_ids, exclusion_list):
                 unique_trades+=1
         last_price,last_ticker, last_date = float(subject_split[subject_split.index("@") + 1]), subject_split[2], date_long.date()
         num_trades+=1
+
 if __name__ in "__main__":
-    file_location = EXPORT_FOLDER
-    sorted_ids = sort_imap_id(file_location)
-    count_trades(sorted_ids, EXCLUSION_LIST)
+    all_trades = get_all_trades()
+    count_trades(all_trades, EXCLUSION_LIST)
