@@ -98,7 +98,8 @@ class PositionKeeper:
             self.update_stats()
             # update_timestamp is for PL/Exposure plotting to be more chronological
             if update_timestamp:
-                self.timestamp = datetime.now().astimezone(pytz.timezone("Asia/Hong_Kong"))
+                hk_time = datetime.now().replace(microsecond=0)
+                self.timestamp = hk_time.astimezone(pytz.timezone("Asia/Hong_Kong"))
 
 
     def get_position_info(self):
