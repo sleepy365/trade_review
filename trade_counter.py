@@ -22,6 +22,9 @@ def connect_imap():
     return imap
 
 def get_all_trades():
+    """
+    Fetches all email confirmations of IBKR trades
+    """
     imap = connect_imap()
     imap.select('Inbox')
     result, email_bytes = imap.search(None, 'FROM "IB Trading Assistant"')
@@ -67,9 +70,11 @@ def get_all_trades():
     raw_trades = raw_trades.reset_index(drop=True)
     return raw_trades
 
-# counts trades and assumes sorted ids from most recent trade to oldest trade
-def count_trades(raw_trades = pd.DataFrame(), exclusion_list = []):
-    # look for trades After current month
+
+def count_trades(raw_trades = pd.DataFrame(), exclusion_list = None):
+    """
+    Counts trades for the current calendar month
+    """
     current_month = datetime.now().month
     current_year = datetime.now().year
 
