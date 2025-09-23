@@ -89,9 +89,16 @@ class PositionKeeper:
         self.market_value = self.exposure * self.last_price
         self.unrealised_pnl = (self.market_value - self.exposure * self.avg_price) * self.contract_size
 
-    def mark_to_market(self, update_timestamp = False):
-        # mark to market for open position otherwise do nth
-        market_price = get_last_price(self.ticker)
+    def mark_to_market(self, update_timestamp = False, market_data = None):
+        # if market_data exists, check it for the market price otherwise try to pull it
+        if isinstance(market_data, dict):
+            # see if ticker exists in market data
+            if self.ticker in market_data.keys():
+                market_price = market_data.get(self.ticker)
+            else:
+                market_price = get_last_price([self.ticker]).get(self.ticker)
+        else:
+            market_price = get_last_price([self.ticker]).get(self.ticker)
         # all the error handling is done in get_last_price so it just returns None if error
         if market_price is not None:
             self.last_price = market_price
@@ -213,6 +220,13 @@ def analyse_trades(all_trades = pd.DataFrame(), file_location = r""):
     """
     tickers = all_trades.ticker.unique()
     tickers = [ticker for ticker in tickers if ticker not in EXCLUSION_LIST]
+
+    # first get market_data for all open positions to save api calls during mark_to_market
+    open_positions = all_trades.groupby("ticker")["quantity"].sum()
+    open_tickers = open_positions.loc[open_positions != 0].index.tolist()
+    open_tickers_traded = [x for x in open_tickers if x not in EXCLUSION_LIST]
+    market_data = get_last_price(open_tickers_traded)
+
     all_tickers, open_pnl, close_pnl, open_quantity, open_price, open_notional, last_price, last_date = [],[],[],[],[],[],[],[]
     for ticker in tickers:
         ticker_trades = all_trades.loc[all_trades.ticker == ticker].iloc[::-1].reset_index(drop=True)
@@ -225,9 +239,9 @@ def analyse_trades(all_trades = pd.DataFrame(), file_location = r""):
             ticker_position.add_trade(row.date_long, row.price, row.quantity)
             # recompute unrealised and realised pnl based on market value
             ticker_position.update_stats()
-        # for open positions, mark to market
+        # for open positions, use market_data to mark to market
         if ticker_position.exposure != 0:
-            ticker_position.mark_to_market(update_timestamp=False)
+            ticker_position.mark_to_market(update_timestamp=False, market_data=market_data)
 
         # retrieve the output of PositionKeeper
         ticker_output = ticker_position.get_position_info()
@@ -317,50 +331,38 @@ def exposure_breakdown(open_pos = pd.DataFrame(), exposure_table = None):
     print("-----------------------------------------------------------")
     return exposure_df
 
-def get_last_price(ticker = None):
+def get_last_price(tickers = None):
     """
-    Wrapper of yfinance func yf.download to extract the last traded price of a ticker.
+    Wrapper of yfinance func yf.download to extract the last traded price of a set of tickers
+    get_last_price(["BABA", "9988", "CL Jul'25", "USDCNH"])
     """
-    # return the most recent closing price of us stock or future
-    ib_yf_mapping = {
-        # "ticker" : ["yfinance=F", carry rate, expiry date]
-        "UC DEC'25": ["USDCNH=X" , -0.024, "2025/12/15"],
-        "ZT": ["ZT=F"],
-        "ZF": ["ZF=F"],
-        "ZN": ["ZN=F"],
-        "TN": ["TN=F"],
-        "ZB": ["ZB=F"],
-        "UB": ["UB=F"],
-        "CL": ["CL=F"],
-    }
-    # default compound factor is 1 because no need to account for interest
-    compound_factor = 1
-    if " " in ticker:
-        ticker_key =  ticker.split()[0] + " " + ticker.split()[1]
-        # if it's a cme future, no need to specify the expiration month due to no efp.
-        if ticker.split()[0] in ib_yf_mapping.keys():
-            ticker = ib_yf_mapping[ticker.split()[0]][0]
-        # if it's a future where interest needs to be accounted for
-        elif ticker_key in ib_yf_mapping.keys():
-            ticker = ib_yf_mapping[ticker_key][0]
-            if len(ib_yf_mapping[ticker_key]) == 3:
-                days_to_expiry = (datetime.strptime(ib_yf_mapping[ticker_key][2], "%Y/%m/%d") - datetime.now()).days
-                compound_factor = (1+ib_yf_mapping[ticker_key][1]/365)**days_to_expiry
-        # no future able to be resolved
+
+    yf_tickers = []
+    for ticker in tickers:
+        # HK tickers
+        if len(ticker) == 4 and ticker.isdigit():
+            yf_tickers.append(ticker + ".HK")
+        # futs will be resolved to the generic active future
+        elif " " in ticker:
+            yf_tickers.append(ticker.split()[0] + "=F")
+        # spot currency
+        elif ticker[:3] == "USD" and len(ticker) == 6:
+            yf_tickers.append(ticker + "=X")
+        # default US ticker need no .US
         else:
-            print(f"Future not resolved for {ticker}, not marking to market")
-            return None
+            yf_tickers.append(ticker)
+    yf_map = dict(zip(yf_tickers, tickers))
 
-    # modify script to work for HK tickers
-    if len(ticker) == 4 and ticker.isdigit():
-        ticker = ticker + ".HK"
-
-    stock_data = yf.download(ticker, period="5d", auto_adjust=True)
+    prices = yf.download(yf_tickers, period="1d", auto_adjust=True)
     try:
-        return stock_data.tail(1)["Close"].values[0][0]*compound_factor
-    except:
-        print(f"Something went wrong with finding last price for {ticker}, defaulting to open_price")
-        print(stock_data)
+        # forward fill to get the most recent close price, and return dict, if yfinance pull failed, return None
+        close_prices = prices["Close"].ffill().iloc[-1]
+        # use yf_map to set dict keys as function input and return
+        close_prices_dict = close_prices.to_dict()
+        close_prices_dict_mapped = dict((yf_map[key], value) for (key, value) in close_prices_dict.items())
+        return close_prices_dict_mapped
+    except IndexError:
+        print(f"\nSomething went wrong with finding last price for {yf_tickers}, defaulting to open_price")
         return None
 
 def get_ticker_trades(all_trades = pd.DataFrame(), ticker = ""):
