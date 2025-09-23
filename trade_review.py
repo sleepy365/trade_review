@@ -191,6 +191,9 @@ def manual_trades(all_trades = pd.DataFrame(), file_location = r""):
     """
     if os.path.isfile(file_location + r"\manual_trades.csv"):
         manual_df = pd.read_csv(file_location + r"\manual_trades.csv")
+        # save a backup of manual_trades
+        manual_df.to_csv(file_location + r"\backups\manual_trades" + f"{datetime.now().strftime("%Y_%m_%d")}" + ".csv",
+                         index=False)
         if len(manual_df) == 0:
             return all_trades
         print(f"Found manual_trades.csv with {len(manual_df)} trades, injecting with UID 0")
@@ -207,7 +210,6 @@ def manual_trades(all_trades = pd.DataFrame(), file_location = r""):
 
         # redump the new all_trades which includes manual_trades
         all_trades.to_csv(file_location + r"\all_trades.csv", index=False)
-        manual_df.to_csv(file_location + r"\backups\manual_trades" + f"{datetime.now().strftime("%Y_%m_%d")}"+ ".csv", index=False)
     return all_trades
 
 
