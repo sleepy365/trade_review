@@ -13,14 +13,12 @@ pd.set_option('display.expand_frame_repr', False)  # Prevent wrapping
 pd.set_option('display.max_colwidth', None)  # Show full content of each column
 
 
-# Todo
-# in analyse trades, use pd.Dataframe on a list of dictionaries and get rid of the bulk .append usage which is stupid
-
 class PositionKeeper:
     """
     Designed to keep track of unrealised and realised positions for a single ticker on a trade by trade basis.
     Can also mark to market for open positions.
-    Pnl includes contract size but exposure and market value is in contract units.
+    Pnl accounts for contract size correctly all through
+    market_value does not account for contract size, except for when returned by get_position_info()
     """
     def __init__(self, ticker, contract_size):
         self.ticker = ticker # name of symbol
@@ -112,11 +110,12 @@ class PositionKeeper:
     def get_position_info(self):
         # nice script to return output in formatted way
         return {
+            "ticker": self.ticker,
             "timestamp": self.timestamp,
             "exposure": self.exposure,
-            "last_price": self.last_price,
-            "avg_price": self.avg_price,
-            "market_value": self.market_value,
+            "last_price": round(self.last_price,4),
+            "avg_price": round(self.avg_price,4),
+            "market_value": round(self.market_value * self.contract_size, 1),
             "realised_pnl": round(float(self.realised_pnl),2),
             "unrealised_pnl": round(float(self.unrealised_pnl),2),
             "total_pnl": round(float(self.realised_pnl + self.unrealised_pnl),2)
@@ -229,7 +228,7 @@ def analyse_trades(all_trades = pd.DataFrame(), file_location = r""):
     open_tickers_traded = [x for x in open_tickers if x not in EXCLUSION_LIST]
     market_data = get_last_price(open_tickers_traded)
 
-    all_tickers, open_pnl, close_pnl, open_quantity, open_price, open_notional, last_price, last_date = [],[],[],[],[],[],[],[]
+    ticker_outputs = []
     for ticker in tickers:
         ticker_trades = all_trades.loc[all_trades.ticker == ticker].iloc[::-1].reset_index(drop=True)
         contract_size = ticker_trades.loc[0, "contract_size"]
@@ -245,43 +244,28 @@ def analyse_trades(all_trades = pd.DataFrame(), file_location = r""):
         if ticker_position.exposure != 0:
             ticker_position.mark_to_market(update_timestamp=False, market_data=market_data)
 
-        # retrieve the output of PositionKeeper
-        ticker_output = ticker_position.get_position_info()
+        # retrieve the output of PositionKeeper and append to a list
+        ticker_outputs.append(ticker_position.get_position_info())
 
-        # aggregate the per ticker output of unrealised and realised PL
-        all_tickers.append(ticker)
-        open_pnl.append(ticker_output["unrealised_pnl"])
-        close_pnl.append(ticker_output["realised_pnl"])
-        open_quantity.append(ticker_output["exposure"])
-        open_price.append(ticker_output["avg_price"])
-        open_notional.append(ticker_output["market_value"] * contract_size)
-        last_price.append(ticker_output["last_price"])
-        last_date.append(ticker_output["timestamp"])
+    # aggregate the per ticker output into a larger dataframe
+    all_pnl = pd.DataFrame(ticker_outputs)
+    # rearrange dataframe columns in desired order, timestamp is only relevant for display last trade date.
+    all_pnl = all_pnl[["ticker", "total_pnl", "unrealised_pnl", "realised_pnl", "exposure", "last_price",
+                           "avg_price", "market_value", "timestamp"]]
 
-    all_pnl = pd.DataFrame(
-        {'ticker' : all_tickers,
-         'open_pnl': open_pnl,
-         'scalp_pnl': close_pnl,
-         'open_quantity' : open_quantity,
-         'open_price' : open_price,
-         'open_notional' : open_notional,
-         'last_price' : last_price,
-         'last_trade' : last_date
-         })
-
-    # sort by absolute PL
-    all_pnl.insert(1, "all_pnl", all_pnl["open_pnl"] + all_pnl["scalp_pnl"])
-    all_pnl["abs_all_pnl"] = abs(all_pnl["all_pnl"])
+    # sort all tickers by absolute PL
+    all_pnl["abs_all_pnl"] = abs(all_pnl["total_pnl"])
     all_pnl = all_pnl.sort_values(by = "abs_all_pnl", ignore_index = True, ascending = False)
     # remove all trades with < MIN SCALP PNL and no open position
-    all_pnl = all_pnl.loc[~((all_pnl["abs_all_pnl"]<MIN_SCALP) & (all_pnl["open_quantity"] == 0))]
+    all_pnl = all_pnl.loc[~((all_pnl["abs_all_pnl"]<MIN_SCALP) & (all_pnl["exposure"] == 0))]
     all_pnl = all_pnl.drop(columns=["abs_all_pnl"])
     all_pnl.to_csv(file_location + r"\all_summary.csv", index=False)
 
     # split into open df and output it
-    open_df = all_pnl.loc[all_pnl["open_quantity"] != 0].reset_index(drop = True)
-    print(open_df, f"\nTotal Open PL is {round(all_pnl["open_pnl"].sum(), 1)}\n"
-                   f"Total Scalp PL is {round(all_pnl["scalp_pnl"].sum(), 1)}")
+    open_df = all_pnl.loc[all_pnl["exposure"] != 0].reset_index(drop = True)
+    print(open_df, f"\nTotal Open PL is {round(all_pnl["unrealised_pnl"].sum(), 1)}\n"
+                   f"Total Scalp PL is {round(all_pnl["realised_pnl"].sum(), 1)}\n"
+                   f"Total PL is {round(all_pnl["total_pnl"].sum(), 1)}")
     return open_df
 
 
@@ -294,23 +278,23 @@ def exposure_breakdown(open_pos = pd.DataFrame(), exposure_table = None):
     # it actually passes the underlying objects of the initial dataframe into the new object
     open_summary = open_pos.copy()
     try:
-        open_summary["exposure"] = open_summary.apply(lambda x: exposure_table.get(x.ticker.split()[0])[0], axis=1)
+        open_summary["exposure_grp"] = open_summary.apply(lambda x: exposure_table.get(x.ticker.split()[0])[0], axis=1)
         open_summary["beta"] = open_summary.apply(lambda x: exposure_table.get(x.ticker.split()[0])[1], axis=1)
     except TypeError:
         print("Some ticker not in exposure_table, fix to see exposure breakdown")
         return None
-    exposure_list = open_summary.exposure.unique()
+    exposure_list = open_summary.exposure_grp.unique()
     exposure_notional = []
     exposure_nominal = []
     components = []
     for exposure in exposure_list:
-        temp = open_summary[open_summary["exposure"] == exposure]
-        exposure_notional.append(round(sum(temp["open_notional"]*temp["beta"]), 1))
-        exposure_nominal.append(round(sum(temp["open_notional"]), 1))
+        temp = open_summary[open_summary["exposure_grp"] == exposure]
+        exposure_notional.append(round(sum(temp["market_value"]*temp["beta"]), 1))
+        exposure_nominal.append(round(sum(temp["market_value"]), 1))
         components.append(temp["ticker"].unique())
     exposure_df = pd.DataFrame(
         {
-            "exposure" : exposure_list,
+            "exposure_grp" : exposure_list,
             "notional" : exposure_notional,
             "nominal" : exposure_nominal,
             "components" : components,
@@ -320,15 +304,15 @@ def exposure_breakdown(open_pos = pd.DataFrame(), exposure_table = None):
 
     # compute equity and XAU exposures and make some output prints about allocation
     # allocations assume IBKR account holds minimal cash balances are inefficient. Rather just deploy long/short into SGOV.
-    equity_exposure = exposure_df.loc[~exposure_df["exposure"].isin(["MM fund", "XAU", "USDCNH", "DV01"])].notional.sum()
-    total_nominal = exposure_df.loc[~exposure_df["exposure"].isin(["USDCNH", "DV01"])].nominal.sum()
+    equity_exposure = exposure_df.loc[~exposure_df["exposure_grp"].isin(["MM fund", "XAU", "USDCNH", "DV01"])].notional.sum()
+    total_nominal = exposure_df.loc[~exposure_df["exposure_grp"].isin(["USDCNH", "DV01"])].nominal.sum()
     print("-----------------------------------------------------------")
     print(f"Equity beta {round(equity_exposure / total_nominal * 100, 1)}%, ")
-    if "XAU" in exposure_df["exposure"].unique():
-        xau_exposure = exposure_df.loc[exposure_df["exposure"] == "XAU"].notional.sum()
+    if "XAU" in exposure_df["exposure_grp"].unique():
+        xau_exposure = exposure_df.loc[exposure_df["exposure_grp"] == "XAU"].notional.sum()
         print(f"XAU allocation {round(xau_exposure/total_nominal*100, 1)}%")
-    if "MM fund" in exposure_df["exposure"].unique():
-        cash_exposure = exposure_df.loc[exposure_df["exposure"] == "MM fund"].notional.sum()
+    if "MM fund" in exposure_df["exposure_grp"].unique():
+        cash_exposure = exposure_df.loc[exposure_df["exposure_grp"] == "MM fund"].notional.sum()
         print(f"Cash allocation {round(cash_exposure/total_nominal*100, 1)}%")
     print("-----------------------------------------------------------")
     return exposure_df
@@ -465,7 +449,7 @@ def other_functions(all_trades = None, file_location = None):
         # show scalp summary
         elif ticker_input == "2":
             all_pnl = pd.read_csv(file_location+r"\all_summary.csv")
-            print(all_pnl, f"\nTotal Scalp PL is {round(all_pnl["scalp_pnl"].sum(), 1)}")
+            print(all_pnl, f"\nTotal Scalp PL is {round(all_pnl["realised_pnl"].sum(), 1)}")
         # show ticker history
         elif ticker_input == "3":
             ticker_history(all_trades)
