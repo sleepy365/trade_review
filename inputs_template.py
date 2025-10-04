@@ -1,4 +1,4 @@
-EXPORT_FOLDER = r"C:\Users\name\exports"
+EXPORT_FOLDER = r"<install location>\trade_view\exports"
 MIN_SCALP = 100
 EXCLUSION_LIST = ["USD.HKD", "AUD.USD", "EUR.USD", "USD.CNH", "CNH.HKD", "USD.JPY", "USD.CHF", "AUD.CNH"]
 

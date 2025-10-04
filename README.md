@@ -13,14 +13,17 @@ but now is integrated into trade_review as other functions.
 
 # Set up    
 1. Setup IMAP for gmail and change the "Folder Size Limits" in IMAP access to unlimited (default is  1000)
-2. pip install poetry
-3. create a folder /trade_review and cd to it
-4. git clone https://github.com/sleepy365/trade_review.git
-5. poetry install
-6. create credentials.py in the same format as inputs_template.py
-7. create inputs.py in the same format as credentials_template.py
-8. run trade_counter.py
-9. if all works, try to run review_trades.py
+2. Set up a gmail app password https://myaccount.google.com/apppasswords
+3. use python>=3.10 to create a venv and activate it
+4. cd to intended code directory and git clone https://github.com/sleepy365/trade_review.git
+5. pip install poetry
+6. poetry config virtualenvs.in-project true
+7. poetry env use \your_venv\python.exe
+8. poetry install
+9. create credentials.py in the same format as credentials_template.py, using 16 character gmail app password
+10. create inputs.py in the same format as inputs_template.py
+11. run trade_counter.py
+12. if all works, try to run review_trades.py
 
 # Use case
 1. Can run the trade_review.py to track exposures across regions, FI and cash equivalents.
