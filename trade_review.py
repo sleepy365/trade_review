@@ -281,7 +281,8 @@ def exposure_breakdown(open_pos = pd.DataFrame(), exposure_table = None):
         open_summary["exposure_grp"] = open_summary.apply(lambda x: exposure_table.get(x.ticker.split()[0])[0], axis=1)
         open_summary["beta"] = open_summary.apply(lambda x: exposure_table.get(x.ticker.split()[0])[1], axis=1)
     except TypeError:
-        print("Some ticker not in exposure_table, fix to see exposure breakdown")
+        missing_tickers = [x for x in open_summary.ticker if x.split()[0] not in exposure_table.keys()]
+        print(f"{missing_tickers} not in exposure_table, fix to see exposure breakdown")
         return None
     exposure_list = open_summary.exposure_grp.unique()
     exposure_notional = []
