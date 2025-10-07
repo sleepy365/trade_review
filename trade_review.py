@@ -111,14 +111,14 @@ class PositionKeeper:
         # nice script to return output in formatted way
         return {
             "ticker": self.ticker,
-            "timestamp": self.timestamp,
             "exposure": self.exposure,
+            "total_pnl": round(float(self.realised_pnl + self.unrealised_pnl), 2),
+            "open_pnl": round(float(self.unrealised_pnl), 2),
+            "scalp_pnl": round(float(self.realised_pnl), 2),
             "last_price": round(self.last_price,4),
             "avg_price": round(self.avg_price,4),
             "market_value": round(self.market_value * self.contract_size, 1),
-            "realised_pnl": round(float(self.realised_pnl),2),
-            "unrealised_pnl": round(float(self.unrealised_pnl),2),
-            "total_pnl": round(float(self.realised_pnl + self.unrealised_pnl),2)
+            "timestamp": self.timestamp,
         }
 def get_contract_size(contract_spec = None, currency_spec = None, ticker = ""):
     if ticker.split()[0] in contract_spec:
@@ -249,9 +249,6 @@ def analyse_trades(all_trades = pd.DataFrame(), file_location = r""):
 
     # aggregate the per ticker output into a larger dataframe
     all_pnl = pd.DataFrame(ticker_outputs)
-    # rearrange dataframe columns in desired order, timestamp is only relevant for display last trade date.
-    all_pnl = all_pnl[["ticker", "total_pnl", "unrealised_pnl", "realised_pnl", "exposure", "last_price",
-                           "avg_price", "market_value", "timestamp"]]
 
     # sort all tickers by absolute PL
     all_pnl["abs_all_pnl"] = abs(all_pnl["total_pnl"])
@@ -263,8 +260,8 @@ def analyse_trades(all_trades = pd.DataFrame(), file_location = r""):
 
     # split into open df and output it
     open_df = all_pnl.loc[all_pnl["exposure"] != 0].reset_index(drop = True)
-    print(open_df, f"\nTotal Open PL is {round(all_pnl["unrealised_pnl"].sum(), 1)}\n"
-                   f"Total Scalp PL is {round(all_pnl["realised_pnl"].sum(), 1)}\n"
+    print(open_df, f"\nOpen PL is {round(all_pnl["open_pnl"].sum(), 1)}\n"
+                   f"Scalp PL is {round(all_pnl["scalp_pnl"].sum(), 1)}\n"
                    f"Total PL is {round(all_pnl["total_pnl"].sum(), 1)}")
     return open_df
 
@@ -379,8 +376,8 @@ def get_ticker_trades(all_trades = pd.DataFrame(), ticker = ""):
             ticker_output.append(ticker_position.get_position_info())
         ticker_output_df = pd.DataFrame(ticker_output)
         print(ticker_output_df)
-        print(f"\nTotal Open PL is {ticker_output_df["unrealised_pnl"].iloc[-1]}"
-              f"\nTotal Scalp PL is {ticker_output_df["realised_pnl"].iloc[-1]}"
+        print(f"\nTotal Open PL is {ticker_output_df["open_pnl"].iloc[-1]}"
+              f"\nTotal Scalp PL is {ticker_output_df["scalp_pnl"].iloc[-1]}"
               f"\nTotal PL is {ticker_output_df["total_pnl"].iloc[-1]}\n")
 
         # plot the PL and exposure over time
@@ -453,7 +450,7 @@ def other_functions(all_trades = None, file_location = None):
         # show scalp summary
         elif ticker_input == "2":
             all_pnl = pd.read_csv(file_location+r"\all_summary.csv")
-            print(all_pnl, f"\nTotal Scalp PL is {round(all_pnl["realised_pnl"].sum(), 1)}")
+            print(all_pnl, f"\nScalp PL is {round(all_pnl["scalp_pnl"].sum(), 1)}")
         # show ticker history
         elif ticker_input == "3":
             ticker_history(all_trades)
