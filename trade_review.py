@@ -441,6 +441,7 @@ def other_functions(all_trades = None, file_location = None):
             "\t1 to count trades in the current month\n"
             "\t2 to see trade summary per ticker\n"
             "\t3 to see history of tickers traded\n"
+            "\t4 to see last 30 trades\n"
         )
         # no command was given so exit
         if ticker_input == "":
@@ -456,6 +457,9 @@ def other_functions(all_trades = None, file_location = None):
         # show ticker history
         elif ticker_input == "3":
             ticker_history(all_trades)
+        # show all trades
+        elif ticker_input == "4":
+            print(all_trades.head(30))
         # show trades associated with the inputed ticker
         else:
             get_ticker_trades(all_trades, ticker_input)
