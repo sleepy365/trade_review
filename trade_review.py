@@ -283,7 +283,6 @@ def exposure_breakdown(open_pos = pd.DataFrame(), exposure_table = None):
     except TypeError:
         print("Some ticker not in exposure_table, fix to see exposure breakdown")
         return None
-    print(open_summary)
     exposure_list = open_summary.exposure_grp.unique()
     exposure_notional = []
     exposure_nominal = []
