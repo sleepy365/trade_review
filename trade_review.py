@@ -283,6 +283,7 @@ def exposure_breakdown(open_pos = pd.DataFrame(), exposure_table = None):
     except TypeError:
         print("Some ticker not in exposure_table, fix to see exposure breakdown")
         return None
+    print(open_summary)
     exposure_list = open_summary.exposure_grp.unique()
     exposure_notional = []
     exposure_nominal = []
@@ -304,8 +305,10 @@ def exposure_breakdown(open_pos = pd.DataFrame(), exposure_table = None):
 
     # compute equity and XAU exposures and make some output prints about allocation
     # allocations assume IBKR account holds minimal cash balances are inefficient. Rather just deploy long/short into SGOV.
-    equity_exposure = exposure_df.loc[~exposure_df["exposure_grp"].isin(["MM fund", "XAU", "USDCNH", "DV01"])].notional.sum()
-    total_nominal = exposure_df.loc[~exposure_df["exposure_grp"].isin(["USDCNH", "DV01"])].nominal.sum()
+    equity_exposure = exposure_df.loc[exposure_df["exposure_grp"].isin(
+        ["US", "CH", "KR", "TW", "IN", "HK", "JP", "SG"])].notional.sum()
+    total_nominal = exposure_df.loc[~exposure_df["exposure_grp"].isin(
+        ["USDCNH", "DV01", "CL"])].nominal.sum()
     print("-----------------------------------------------------------")
     print(f"Equity beta {round(equity_exposure / total_nominal * 100, 1)}%, ")
     if "XAU" in exposure_df["exposure_grp"].unique():
