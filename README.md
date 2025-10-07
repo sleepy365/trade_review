@@ -4,7 +4,7 @@ personal wealth management and to resolve the limitations of the IBKR GUI. It ac
 1. Queries trade confirmations from IBKR which get sent to my gmail
 2. Stores trade confirmations into a trade database which can be accessed, and backed up.
 3. Portfolio analysis for exposure management, position management, open position PL, scalp PL breakdowns, and trades by ticker
-4. Also has functions to read in manual trades.csv incase trade confirmation was missing
+4. Also has functions to read in exports/manual_trades.csv incase trade confirmations are missing
 
 # trade_counter
 Script that pulls trade confirmations from IBKR and presents timestamps and trade content. This tool counts the number executed 
@@ -25,8 +25,12 @@ but now is integrated into trade_review as other functions.
 11. run trade_counter.py
 12. if all works, try to run review_trades.py
 
-# Use case
-1. Can run the trade_review.py to track exposures across regions, FI and cash equivalents.
-2. Can use the get_ticker_trades function to see unrealised, realised PL, exposure per trade for any ticker. 
-3. There was a 3-month period of time in 2024 where IBKR was misconfigured to not give trade confirmations, I have fixed
-exports/manual_trades.csv which resolves this issue.
+# Use case for trade_review.py
+1. run script to track exposures across regions, FI, XAU and cash equivalents. Also shows all time pnl.
+2. by responding to the get_ticker_trades() prompt, see unrealised, realised PL, exposure on a trade by trade basis.
+3. There was a 3-month period of time in 2024 where IBKR was misconfigured to not give trade confirmations, 
+I have set a fixed exports/manual_trades.csv which the script always checks for
+
+# Known Issues
+1. for futures, trade_review.get_last_price() will return the last price for the active future contract 
+e.g CL=F. This means unrealised pnl based on mark-to-market prices may be off, especially for far out futures.
