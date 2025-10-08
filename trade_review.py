@@ -256,13 +256,28 @@ def analyse_trades(all_trades = pd.DataFrame(), file_location = r""):
     # remove all trades with < MIN SCALP PNL and no open position
     all_pnl = all_pnl.loc[~((all_pnl["abs_all_pnl"]<MIN_SCALP) & (all_pnl["exposure"] == 0))]
     all_pnl = all_pnl.drop(columns=["abs_all_pnl"])
+
+
+    total_pnl = int(round(all_pnl["total_pnl"].sum(), 0))
+    open_pnl = int(round(all_pnl["open_pnl"].sum(), 0))
+    scalp_pnl = int(round(all_pnl["scalp_pnl"].sum(), 0))
+
+    # pull the backup all_summary if it exists to compute change in pnl
+    total_pnl_yest,open_pnl_yest, scalp_pnl_yest = 0, 0, 0
+    if os.path.isfile(file_location + r"\all_summary.csv"):
+        all_pnl_yest = pd.read_csv(file_location + r"\all_summary.csv")
+        total_pnl_yest = int(round(all_pnl_yest["total_pnl"].sum(),0))
+        open_pnl_yest = int(round(all_pnl_yest["open_pnl"].sum(), 0))
+        scalp_pnl_yest = int(round(all_pnl_yest["scalp_pnl"].sum(), 0))
+
+    # save the new all_summary
     all_pnl.to_csv(file_location + r"\all_summary.csv", index=False)
 
     # split into open df and output it
     open_df = all_pnl.loc[all_pnl["exposure"] != 0].reset_index(drop = True)
-    print(open_df, f"\nOpen PL is {round(all_pnl["open_pnl"].sum(), 1)}\n"
-                   f"Scalp PL is {round(all_pnl["scalp_pnl"].sum(), 1)}\n"
-                   f"Total PL is {round(all_pnl["total_pnl"].sum(), 1)}")
+    print(open_df, f"\nTotal PL is {total_pnl}, {(total_pnl-total_pnl_yest):+}\n"
+                   f"Open PL is {open_pnl}, {(open_pnl-open_pnl_yest):+}\n"
+                   f"Scalp PL is {scalp_pnl}, {(scalp_pnl-scalp_pnl_yest):+}")
     return open_df
 
 
