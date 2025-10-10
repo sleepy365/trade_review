@@ -3,7 +3,7 @@ import pytz
 import pandas as pd
 import os
 from trade_counter import count_trades, get_all_trades
-from inputs import exposure_table,currency_table, contract_size_table, EXCLUSION_LIST, EXPORT_FOLDER, MIN_SCALP
+from inputs import exposure_table,currency_table, contract_size_table, EXCLUSION_LIST, EXPORT_FOLDER
 import yfinance as yf
 import matplotlib.pyplot as plt
 pd.set_option('display.max_rows', 500)
@@ -253,8 +253,6 @@ def analyse_trades(all_trades = pd.DataFrame(), file_location = r""):
     # sort all tickers by absolute PL
     all_pnl["abs_all_pnl"] = abs(all_pnl["total_pnl"])
     all_pnl = all_pnl.sort_values(by = "abs_all_pnl", ignore_index = True, ascending = False)
-    # remove all trades with < MIN SCALP PNL and no open position
-    all_pnl = all_pnl.loc[~((all_pnl["abs_all_pnl"]<MIN_SCALP) & (all_pnl["exposure"] == 0))]
     all_pnl = all_pnl.drop(columns=["abs_all_pnl"])
 
 
