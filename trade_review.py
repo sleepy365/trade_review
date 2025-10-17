@@ -311,7 +311,11 @@ def exposure_breakdown(open_pos = pd.DataFrame(), exposure_table = None):
             "components" : components,
         }
     )
+    print("-----------------------------------------------------------")
+    equity_exposure = exposure_df.loc[exposure_df["exposure_grp"].isin(
+        ["US", "CH", "KR", "TW", "IN", "HK", "JP", "SG"])].notional.sum()
     print(exposure_df)
+    print(f"Equity exposure {equity_exposure}")
     print("-----------------------------------------------------------")
     return exposure_df
 
