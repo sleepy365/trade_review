@@ -312,7 +312,7 @@ def exposure_breakdown(open_pos = pd.DataFrame(), exposure_table = None):
         }
     )
     print(exposure_df)
-
+    print("-----------------------------------------------------------")
     return exposure_df
 
 def get_last_price(tickers = None):
