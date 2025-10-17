@@ -313,21 +313,6 @@ def exposure_breakdown(open_pos = pd.DataFrame(), exposure_table = None):
     )
     print(exposure_df)
 
-    # compute equity and XAU exposures and make some output prints about allocation
-    # allocations assume IBKR account holds minimal cash balances are inefficient. Rather just deploy long/short into SGOV.
-    equity_exposure = exposure_df.loc[exposure_df["exposure_grp"].isin(
-        ["US", "CH", "KR", "TW", "IN", "HK", "JP", "SG"])].notional.sum()
-    total_nominal = exposure_df.loc[~exposure_df["exposure_grp"].isin(
-        ["USDCNH", "DV01", "CL"])].nominal.sum()
-    print("-----------------------------------------------------------")
-    print(f"Equity beta {round(equity_exposure / total_nominal * 100, 1)}%, ")
-    if "XAU" in exposure_df["exposure_grp"].unique():
-        xau_exposure = exposure_df.loc[exposure_df["exposure_grp"] == "XAU"].notional.sum()
-        print(f"XAU allocation {round(xau_exposure/total_nominal*100, 1)}%")
-    if "MM fund" in exposure_df["exposure_grp"].unique():
-        cash_exposure = exposure_df.loc[exposure_df["exposure_grp"] == "MM fund"].notional.sum()
-        print(f"Cash allocation {round(cash_exposure/total_nominal*100, 1)}%")
-    print("-----------------------------------------------------------")
     return exposure_df
 
 def get_last_price(tickers = None):
