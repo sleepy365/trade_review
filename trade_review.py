@@ -1,4 +1,5 @@
 from datetime import datetime
+import time
 import pytz
 import pandas as pd
 import os
@@ -319,7 +320,7 @@ def exposure_breakdown(open_pos = pd.DataFrame(), exposure_table = None):
     print("-----------------------------------------------------------")
     return exposure_df
 
-def get_last_price(tickers = None):
+def get_last_price(tickers = None, precision = None):
     """
     Wrapper of yfinance func yf.download to extract the last traded price of a set of tickers
     get_last_price(["BABA", "9988", "CL Jul'25", "USDCNH"])
@@ -341,10 +342,12 @@ def get_last_price(tickers = None):
             yf_tickers.append(ticker)
     yf_map = dict(zip(yf_tickers, tickers))
 
-    prices = yf.download(yf_tickers, period="3d", auto_adjust=True, prepost=True)
+    prices = yf.download(yf_tickers, period="3d", auto_adjust=True, prepost=True, progress=False)
     try:
         # forward fill to get the most recent close price, and return dict, if yfinance pull failed, return None
         close_prices = prices["Close"].ffill().iloc[-1]
+        if precision is not None:
+            close_prices = close_prices.round(precision)
         # use yf_map to set dict keys as function input and return
         close_prices_dict = close_prices.to_dict()
         close_prices_dict_mapped = dict((yf_map[key], value) for (key, value) in close_prices_dict.items())
@@ -441,6 +444,7 @@ def other_functions(all_trades = None, file_location = None):
             "\t2 to see trade summary per ticker\n"
             "\t3 to see history of tickers traded\n"
             "\t4 to see last 30 trades\n"
+            "\t5 to start stock monitor\n"
         )
         # no command was given so exit
         if ticker_input == "":
@@ -460,6 +464,14 @@ def other_functions(all_trades = None, file_location = None):
         # show all trades
         elif ticker_input == "4":
             print(all_trades.head(30))
+        # ticker monitor to stream live prices
+        elif ticker_input == "5":
+            spaced_tickers = input("input tickers separated by commas (e.g BABA, CL fut)\n, default precision 4\n")
+            split_tickers = spaced_tickers.split(",")
+            split_tickers_upper = [x.upper().lstrip() for x in split_tickers]
+            while True:
+                print(get_last_price(split_tickers_upper, 4))
+                time.sleep(10)
         # show trades associated with the inputed ticker
         else:
             get_ticker_trades(all_trades, ticker_input)
