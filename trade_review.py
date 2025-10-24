@@ -452,7 +452,8 @@ def other_functions(all_trades = None, file_location = None):
         # show scalp summary
         elif ticker_input == "2":
             all_pnl = pd.read_csv(file_location+r"\all_summary.csv")
-            print(all_pnl, f"\nScalp PL is {round(all_pnl["scalp_pnl"].sum(), 1)}")
+            all_pnl_light = all_pnl[["ticker", "total_pnl", "open_pnl", "scalp_pnl", "last_price", "timestamp"]]
+            print(all_pnl_light, f"\nScalp PL is {int(round(all_pnl_light["scalp_pnl"].sum(), 0))}")
         # show ticker history
         elif ticker_input == "3":
             ticker_history(all_trades)
