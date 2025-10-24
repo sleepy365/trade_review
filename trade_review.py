@@ -466,7 +466,7 @@ def other_functions(all_trades = None, file_location = None):
             print(all_trades.head(30))
         # ticker monitor to stream live prices
         elif ticker_input == "5":
-            spaced_tickers = input("input tickers separated by commas (e.g BABA, CL fut)\n, default precision 4\n")
+            spaced_tickers = input("input tickers separated by commas (e.g BABA, CL fut), default precision 4\n")
             split_tickers = spaced_tickers.split(",")
             split_tickers_upper = [x.upper().lstrip() for x in split_tickers]
             while True:
