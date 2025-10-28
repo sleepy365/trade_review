@@ -4,7 +4,7 @@ import pytz
 import pandas as pd
 import os
 from trade_counter import count_trades, get_all_trades
-from inputs import exposure_table,currency_table, contract_size_table, EXCLUSION_LIST, EXPORT_FOLDER
+from inputs import exposure_table,currency_table, contract_size_table, EXCLUSION_LIST, EXPORT_FOLDER, PLOTTING
 import yfinance as yf
 import matplotlib.pyplot as plt
 pd.set_option('display.max_rows', 500)
@@ -356,7 +356,7 @@ def get_last_price(tickers = None, precision = None):
         print(f"\nSomething went wrong with finding last price for {yf_tickers}, defaulting to open_price")
         return None
 
-def get_ticker_trades(all_trades = pd.DataFrame(), ticker = ""):
+def get_ticker_trades(all_trades = pd.DataFrame(), ticker = "", make_chart = PLOTTING):
     """
     Takes an all_trades df and does analysis on a specific ticker, will also present a plot on exposure and pnl
     """
@@ -385,33 +385,34 @@ def get_ticker_trades(all_trades = pd.DataFrame(), ticker = ""):
               f"\nTotal Scalp PL is {ticker_output_df["scalp_pnl"].iloc[-1]}"
               f"\nTotal PL is {ticker_output_df["total_pnl"].iloc[-1]}\n")
 
-        # plot the PL and exposure over time
-        # Create the plot
-        fig, ax1 = plt.subplots(figsize=(10, 6))
+        if make_chart:
+            # plot the PL and exposure over time
+            # Create the plot
+            fig, ax1 = plt.subplots(figsize=(10, 6))
 
-        # Plot total_pnl on the left y-axis (ax1)
-        ax1.plot(ticker_output_df['timestamp'], ticker_output_df['total_pnl'], label='Total PNL', color='magenta', linewidth=2)
-        ax1.set_xlabel('Timestamp')
-        ax1.set_ylabel('PNL (USD)', color='magenta')
-        ax1.tick_params(axis='y', labelcolor='magenta')
-        ax1.grid(True)
+            # Plot total_pnl on the left y-axis (ax1)
+            ax1.plot(ticker_output_df['timestamp'], ticker_output_df['total_pnl'], label='Total PNL', color='magenta', linewidth=2)
+            ax1.set_xlabel('Timestamp')
+            ax1.set_ylabel('PNL (USD)', color='magenta')
+            ax1.tick_params(axis='y', labelcolor='magenta')
+            ax1.grid(True)
 
-        # Create a second y-axis for exposure on the right
-        ax2 = ax1.twinx()
-        ax2.plot(ticker_output_df['timestamp'], ticker_output_df['exposure'], label='Exposure', color='green', linewidth=2)
-        ax2.set_ylabel('Exposure (units)', color='green')
-        ax2.tick_params(axis='y', labelcolor='green')
+            # Create a second y-axis for exposure on the right
+            ax2 = ax1.twinx()
+            ax2.plot(ticker_output_df['timestamp'], ticker_output_df['exposure'], label='Exposure', color='green', linewidth=2)
+            ax2.set_ylabel('Exposure (units)', color='green')
+            ax2.tick_params(axis='y', labelcolor='green')
 
-        # Add title and legend
-        plt.title(f'{ticker}')
-        fig.legend(loc='upper center', bbox_to_anchor=(0.5, -0.05), ncol=2)
+            # Add title and legend
+            plt.title(f'{ticker}')
+            fig.legend(loc='upper center', bbox_to_anchor=(0.5, -0.05), ncol=2)
 
-        # Rotate x-axis labels and adjust layout
-        ax1.tick_params(axis='x', rotation=45)
-        fig.tight_layout()
+            # Rotate x-axis labels and adjust layout
+            ax1.tick_params(axis='x', rotation=45)
+            fig.tight_layout()
 
-        # Show the plot
-        plt.show()
+            # Show the plot
+            plt.show()
 
     else:
         print("Ticker not in unique tickers")
