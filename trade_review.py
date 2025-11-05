@@ -290,12 +290,14 @@ def exposure_breakdown(open_pos = pd.DataFrame(), exposure_table = None):
     open_summary = open_pos.copy()
     try:
         open_summary["exposure_grp"] = open_summary.apply(lambda x: exposure_table.get(x.ticker.split()[0])[0], axis=1)
-        open_summary["beta"] = open_summary.apply(lambda x: exposure_table.get(x.ticker.split()[0])[1], axis=1)
+        open_summary["type"] = open_summary.apply(lambda x: exposure_table.get(x.ticker.split()[0])[1], axis=1)
+        open_summary["beta"] = open_summary.apply(lambda x: exposure_table.get(x.ticker.split()[0])[2], axis=1)
     except TypeError:
         missing_tickers = [x for x in open_summary.ticker if x.split()[0] not in exposure_table.keys()]
         print(f"{missing_tickers} not in exposure_table, fix to see exposure breakdown")
         return None
     exposure_list = open_summary.exposure_grp.unique()
+
     exposure_notional = []
     exposure_nominal = []
     components = []
@@ -313,10 +315,21 @@ def exposure_breakdown(open_pos = pd.DataFrame(), exposure_table = None):
         }
     )
     print("-----------------------------------------------------------")
+    print(exposure_df)
+
+    # compute stats about the portfolio allocation
     equity_exposure = exposure_df.loc[exposure_df["exposure_grp"].isin(
         ["US", "CH", "KR", "TW", "IN", "HK", "JP", "SG"])].notional.sum()
-    print(exposure_df)
-    print(f"Equity exposure {int(round(equity_exposure,0))}")
+    gold_exposure = exposure_df.loc[exposure_df["exposure_grp"].isin(
+        ["XAU"])].notional.sum()
+    cash_exposure = exposure_df.loc[exposure_df["exposure_grp"].isin(
+        ["MM fund"])].notional.sum()
+    net_asset_val = sum(open_summary.loc[open_summary["type"] == "stock","market_value"])
+    equity_beta = int(round(100* equity_exposure / net_asset_val,0))
+    gold_beta = int(round(100* gold_exposure / net_asset_val,0))
+    cash_beta = int(round(100* cash_exposure / net_asset_val,0))
+
+    print(f"NAV {int(round(net_asset_val,0))}, {equity_beta}% equities, {gold_beta}% gold and {cash_beta}% cash")
     print("-----------------------------------------------------------")
     return exposure_df
 
