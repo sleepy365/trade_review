@@ -442,7 +442,7 @@ def ticker_history(all_trades = pd.DataFrame()):
 
 def show_watchlist(used_watchlist = None):
     for custom_list in used_watchlist.keys():
-        print(f"{custom_list}", get_last_price(used_watchlist.get(custom_list), 2))
+        print(f"{custom_list}", get_last_price(used_watchlist.get(custom_list), 3))
     print("-----------------------------------------------------------")
 
 

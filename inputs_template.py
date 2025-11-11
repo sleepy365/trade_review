@@ -2,7 +2,7 @@ EXPORT_FOLDER = r"<install location>\trade_view\exports"
 EXCLUSION_LIST = ["USD.HKD", "AUD.USD", "EUR.USD", "USD.CNH", "CNH.HKD", "USD.JPY", "USD.CHF", "AUD.CNH"]
 PLOTTING = False # this decides if get_ticker_trades() does charting
 
-# default watchlist
+# watchlist for daily monitoring
 watch_list = {
     "main": ["BABA", "NVDA"],
     "fun": ["AMD"]
