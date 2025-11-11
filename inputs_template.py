@@ -2,6 +2,11 @@ EXPORT_FOLDER = r"<install location>\trade_view\exports"
 EXCLUSION_LIST = ["USD.HKD", "AUD.USD", "EUR.USD", "USD.CNH", "CNH.HKD", "USD.JPY", "USD.CHF", "AUD.CNH"]
 PLOTTING = False # this decides if get_ticker_trades() does charting
 
+# default watchlist
+watch_list = {
+    "main": ["BABA", "NVDA"],
+    "fun": ["AMD"]
+}
 # currency table is applied in contract_size_table as base currency is USD
 currency_table = {
     "EURUSD": 1.16,

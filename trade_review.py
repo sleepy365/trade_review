@@ -4,7 +4,7 @@ import pytz
 import pandas as pd
 import os
 from trade_counter import count_trades, get_all_trades
-from inputs import exposure_table,currency_table, contract_size_table, EXCLUSION_LIST, EXPORT_FOLDER, PLOTTING
+from inputs import exposure_table,currency_table, contract_size_table, watch_list, EXCLUSION_LIST, EXPORT_FOLDER, PLOTTING
 import yfinance as yf
 import matplotlib.pyplot as plt
 pd.set_option('display.max_rows', 500)
@@ -440,6 +440,12 @@ def ticker_history(all_trades = pd.DataFrame()):
     print(grouped_df["ticker"].unique())
 
 
+def show_watchlist(used_watchlist = None):
+    for custom_list in used_watchlist.keys():
+        print(f"{custom_list}", get_last_price(used_watchlist.get(custom_list), 2))
+    print("-----------------------------------------------------------")
+
+
 def other_functions(all_trades = None, file_location = None):
     """
     This function runs at the end of the program, giving the user a few extra functions to review their trades.
@@ -458,7 +464,6 @@ def other_functions(all_trades = None, file_location = None):
             "\t2 to see trade summary per ticker\n"
             "\t3 to see history of tickers traded\n"
             "\t4 to see last 30 trades\n"
-            "\t5 to start stock monitor\n"
         )
         # no command was given so exit
         if ticker_input == "":
@@ -475,18 +480,10 @@ def other_functions(all_trades = None, file_location = None):
         # show ticker history
         elif ticker_input == "3":
             ticker_history(all_trades)
-        # show all trades
+        # show last 30 trades
         elif ticker_input == "4":
             print(all_trades.head(30))
-        # ticker monitor to stream live prices
-        elif ticker_input == "5":
-            spaced_tickers = input("input tickers separated by commas (e.g BABA, CL fut), default precision 4\n")
-            split_tickers = spaced_tickers.split(",")
-            split_tickers_upper = [x.upper().lstrip() for x in split_tickers]
-            while True:
-                print(get_last_price(split_tickers_upper, 4))
-                time.sleep(10)
-        # show trades associated with the inputed ticker
+        # show trades for a specific ticker
         else:
             get_ticker_trades(all_trades, ticker_input)
     print("Thanks for taking time to review trades, exiting")
@@ -501,6 +498,7 @@ if __name__ in "__main__":
     all_trades = manual_trades(clean_trades, export_location)
     open_summary = analyse_trades(all_trades, export_location)
     exposure_df = exposure_breakdown(open_summary, exposure_table)
+    show_watchlist(watch_list)
     other_functions(all_trades, export_location)
 
 
