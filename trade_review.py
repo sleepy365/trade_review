@@ -98,8 +98,8 @@ class PositionKeeper:
                 market_price = get_last_price([self.ticker]).get(self.ticker)
         else:
             market_price = get_last_price([self.ticker]).get(self.ticker)
-        # all the error handling is done in get_last_price so it just returns None if error
-        if market_price is not None:
+        # market_price will be NaN or None due to get_last_price error handling
+        if (market_price is not None) & (not pd.isna(market_price)):
             self.last_price = market_price
             self.update_stats()
             # update_timestamp is for PL/Exposure plotting to be more chronological
@@ -228,6 +228,7 @@ def analyse_trades(all_trades = pd.DataFrame(), file_location = r""):
     open_tickers = open_positions.loc[open_positions != 0].index.tolist()
     open_tickers_traded = [x for x in open_tickers if x not in EXCLUSION_LIST]
     market_data = get_last_price(open_tickers_traded)
+    print(market_data)
 
     ticker_outputs = []
     for ticker in tickers:
