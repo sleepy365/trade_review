@@ -228,7 +228,6 @@ def analyse_trades(all_trades = pd.DataFrame(), file_location = r""):
     open_tickers = open_positions.loc[open_positions != 0].index.tolist()
     open_tickers_traded = [x for x in open_tickers if x not in EXCLUSION_LIST]
     market_data = get_last_price(open_tickers_traded)
-    print(market_data)
 
     ticker_outputs = []
     for ticker in tickers:
