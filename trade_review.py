@@ -93,19 +93,20 @@ class PositionKeeper:
         if isinstance(market_data, dict):
             # see if ticker exists in market data
             if self.ticker in market_data.keys():
-                market_price = market_data.get(self.ticker)
+                market_price = market_data
             else:
-                market_price = get_last_price([self.ticker]).get(self.ticker)
+                market_price = get_last_price([self.ticker])
         else:
-            market_price = get_last_price([self.ticker]).get(self.ticker)
-        # market_price will be NaN or None due to get_last_price error handling
-        if (market_price is not None) & (not pd.isna(market_price)):
-            self.last_price = market_price
-            self.update_stats()
-            # update_timestamp is for PL/Exposure plotting to be more chronological
-            if update_timestamp:
-                hk_time = datetime.now().replace(microsecond=0)
-                self.timestamp = hk_time.astimezone(pytz.timezone("Asia/Hong_Kong"))
+            market_price = get_last_price([self.ticker])
+        # market_price will be None if error returned by get_last_price
+        if market_price is not None:
+            if not pd.isna(market_price.get(self.ticker)):
+                self.last_price = market_price.get(self.ticker)
+                self.update_stats()
+                # update_timestamp is for PL/Exposure plotting to be more chronological
+                if update_timestamp:
+                    hk_time = datetime.now().replace(microsecond=0)
+                    self.timestamp = hk_time.astimezone(pytz.timezone("Asia/Hong_Kong"))
 
 
     def get_position_info(self):
