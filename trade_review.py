@@ -465,6 +465,7 @@ def other_functions(all_trades = None, file_location = None):
             "\t2 to see trade summary per ticker\n"
             "\t3 to see history of tickers traded\n"
             "\t4 to see last 30 trades\n"
+            "\t5 to refresh the script\n"
         )
         # no command was given so exit
         if ticker_input == "":
@@ -484,14 +485,15 @@ def other_functions(all_trades = None, file_location = None):
         # show last 30 trades
         elif ticker_input == "4":
             print(all_trades.head(30))
+        elif ticker_input == "5":
+            main()
         # show trades for a specific ticker
         else:
             get_ticker_trades(all_trades, ticker_input)
     print("Thanks for taking time to review trades, exiting")
     return
 
-
-if __name__ in "__main__":
+def main():
     export_location = EXPORT_FOLDER
     # perform all the analytics
     raw_trades = get_all_trades()
@@ -501,6 +503,9 @@ if __name__ in "__main__":
     exposure_df = exposure_breakdown(open_summary, exposure_table)
     show_watchlist(watch_list)
     other_functions(all_trades, export_location)
+
+if __name__ in "__main__":
+    main()
 
 
 
