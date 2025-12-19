@@ -4,7 +4,7 @@ import pytz
 import pandas as pd
 import os
 from trade_counter import count_trades, get_all_trades
-from inputs import exposure_table,currency_table, contract_size_table, watch_list, EXCLUSION_LIST, EXPORT_FOLDER, PLOTTING
+from inputs import exposure_table,currency_table, contract_size_table, watch_list, EXCLUSION_LIST, EXPORT_FOLDER, PLOTTING, CASH
 import yfinance as yf
 import matplotlib.pyplot as plt
 pd.set_option('display.max_rows', 500)
@@ -324,8 +324,8 @@ def exposure_breakdown(open_pos = pd.DataFrame(), exposure_table = None):
     gold_exposure = exposure_df.loc[exposure_df["exposure_grp"].isin(
         ["XAU"])].notional.sum()
     cash_exposure = exposure_df.loc[exposure_df["exposure_grp"].isin(
-        ["MM fund"])].notional.sum()
-    net_asset_val = sum(open_summary.loc[open_summary["type"] == "stock","market_value"])
+        ["MM fund"])].notional.sum() + CASH
+    net_asset_val = sum(open_summary.loc[open_summary["type"] == "stock","market_value"]) + CASH
     equity_beta = int(round(100* equity_exposure / net_asset_val,0))
     gold_beta = int(round(100* gold_exposure / net_asset_val,0))
     cash_beta = int(round(100* cash_exposure / net_asset_val,0))
