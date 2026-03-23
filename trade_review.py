@@ -412,7 +412,7 @@ def get_ticker_trades(all_trades = pd.DataFrame(), ticker = "", make_chart = PLO
 
             # Create a second y-axis for exposure on the right
             ax2 = ax1.twinx()
-            ax2.plot(ticker_output_df['timestamp'], ticker_output_df['exposure'], label='Exposure', color='green', linewidth=2)
+            ax2.plot(ticker_output_df['timestamp'], ticker_output_df['pos'], label='Exposure', color='green', linewidth=2)
             ax2.set_ylabel('Exposure (units)', color='green')
             ax2.tick_params(axis='y', labelcolor='green')
 
