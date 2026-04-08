@@ -293,7 +293,7 @@ def exposure_breakdown(open_pos = pd.DataFrame(), exposure_table = None):
         open_summary["type"] = open_summary.apply(lambda x: exposure_table.get(x.ticker.split()[0])[1], axis=1)
         open_summary["beta"] = open_summary.apply(lambda x: exposure_table.get(x.ticker.split()[0])[2], axis=1)
     except TypeError:
-        missing_tickers = [x for x in open_summary.ticker if x.split()[0] not in exposure_table.keys()]
+        missing_tickers = [x.split()[0] for x in open_summary.ticker if x.split()[0] not in exposure_table.keys()]
         print(f"{missing_tickers} not in exposure_table, fix to see exposure breakdown")
         return None
     exposure_list = open_summary.exposure_grp.unique()
@@ -344,6 +344,9 @@ def get_last_price(tickers = None, precision = None):
         # HK tickers
         if len(ticker) == 4 and ticker.isdigit():
             yf_tickers.append(ticker + ".HK")
+        # JP tickers
+        if ticker.endswith("TSEJ"):
+            yf_tickers.append(ticker.split(" ")[0] + ".T")
         # futs will be resolved to the generic active future
         elif " " in ticker:
             yf_tickers.append(ticker.split()[0] + "=F")
