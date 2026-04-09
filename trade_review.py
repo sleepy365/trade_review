@@ -345,7 +345,7 @@ def get_last_price(tickers = None, precision = None):
         if len(ticker) == 4 and ticker.isdigit():
             yf_tickers.append(ticker + ".HK")
         # JP tickers
-        if ticker.endswith("TSEJ"):
+        elif ticker.endswith("TSEJ"):
             yf_tickers.append(ticker.split(" ")[0] + ".T")
         # futs will be resolved to the generic active future
         elif " " in ticker:
@@ -358,7 +358,7 @@ def get_last_price(tickers = None, precision = None):
             yf_tickers.append(ticker)
     yf_map = dict(zip(yf_tickers, tickers))
 
-    prices = yf.download(yf_tickers, period="3d", auto_adjust=True, prepost=True, progress=False)
+    prices = yf.download(yf_tickers, period="3d", auto_adjust=True, progress=False)
     try:
         # forward fill to get the most recent close price, and return dict, if yfinance pull failed, return None
         close_prices = prices["Close"].ffill().iloc[-1]
