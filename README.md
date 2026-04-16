@@ -21,7 +21,7 @@ but now is integrated into trade_review as other functions.
 7. poetry env use \your_venv\python.exe
 8. poetry install
 9. create credentials.py in the same format as credentials_template.py, using 16 character gmail app password
-10. create inputs.py in the same format as inputs_template.py
+10. edit inputs.py for your specific settings
 11. run trade_counter.py
 12. if all works, try to run review_trades.py
 
