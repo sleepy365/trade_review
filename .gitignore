@@ -5,7 +5,6 @@ Ignore exports folder and all contents
 /exports/all_summary.csv
 /exports/manual_trades.csv
 /credentials.py
-/inputs.py
 /sleepy.ico
 /trade_review.bat
 

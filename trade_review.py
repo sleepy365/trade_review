@@ -3,14 +3,20 @@ import pytz
 import pandas as pd
 import os
 from trade_counter import count_trades, get_all_trades
-from inputs import exposure_table,currency_table, contract_size_table, watch_list, EXCLUSION_LIST, EXPORT_FOLDER, PLOTTING, CASH
+from inputs import exposure_table,currency_table, contract_size_table, watch_list, EXCLUSION_LIST, PLOTTING, CASH
 import yfinance as yf
 import matplotlib.pyplot as plt
+from pathlib import Path
 pd.set_option('display.max_rows', 500)
 pd.set_option('display.max_columns', None)  # Show all columns
 pd.set_option('display.width', 1000)  # Increase width to fit your screen
 pd.set_option('display.expand_frame_repr', False)  # Prevent wrapping
 pd.set_option('display.max_colwidth', None)  # Show full content of each column
+
+# find export location
+SCRIPT_DIR = Path(__file__).parent.resolve()
+EXPORT_FOLDER = str(SCRIPT_DIR / "exports")
+
 
 
 class PositionKeeper:

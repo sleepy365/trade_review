@@ -1,0 +1,83 @@
+EXCLUSION_LIST = ["USD.HKD", "AUD.USD", "EUR.USD", "USD.CNH", "CNH.HKD", "USD.JPY", "USD.CHF", "AUD.CNH"]
+PLOTTING = True # this decides if get_ticker_trades() does charting
+CASH = 0 # periodically adjust this for correct NAV calculation
+
+# watchlist for daily monitoring
+watch_list = {
+    "main": ["BABA", "1211", "AMD", "NVDA", "USDCNH", "USDJPY"],
+    "fun": ["GC fut", "SI fut", "CL fut", "ES fut"]
+}
+# currency table is applied in contract_size_table as base currency is USD
+currency_table = {
+    "EURUSD": 1.18,
+    "USDCNH": 6.83,
+    "USDHKD": 7.83,
+    "USDJPY": 159,
+}
+contract_size_table = {
+    "ZT": 2000,
+    "ZF": 1000,
+    "ZN": 1000,
+    "TN": 1000,
+    "ZB": 1000,
+    "UB": 1000,
+    "MES": 5,
+    "ES": 50,
+    "MGC": 10,
+    "M2K": 5,
+    "MNQ": 2,
+    "SOFR3": 2500,
+    "GBS": 1000 * currency_table["EURUSD"],
+    "UC": 100000 / currency_table["USDCNH"],
+    "CL": 1000,
+    "7974": 1 / currency_table["USDJPY"]
+}
+
+# exposure table for exposure breakdown
+exposure_table = {
+    "AMD": ["US", "stock", 1.5],
+    "ASML": ["EU", "stock", 1],
+    "ARM": ["US", "stock", 1.5],
+    "NFLX": ["US", "stock", 1],
+    "INDA": ["IN", "stock", 1],
+    "EWY": ["KR", "stock", 1],
+    "BABA": ["HK", "stock", 1.2],
+    "SMCI": ["US", "stock", 2],
+    "U": ["US", "stock", 3],
+    "APP": ["US", "stock", 3],
+    "TCEHY": ["HK", "stock", 1],
+    "ASPI": ["US", "stock", 3],
+    "9992": ["HK", "stock", 1.8],
+    "2423": ["HK", "stock", 1],
+    "2259": ["XAU", "stock", 1.5],
+    "FXI": ["HK", "stock", 1],
+    "BEKE": ["HK", "stock", 1],
+    "XINA50": ["CH", "future", 1],
+    "SOFR3": ["DV01", "future", 1 / 10000],
+    "GBS": ["DV01", "future", 1.86 / 10000],
+    "NVDA": ["US", "stock", 1.5],
+    "SGOV": ["MM fund", "stock", 1],
+    "BIL": ["MM fund", "stock", 1],
+    "SPY": ["US", "stock", 1],
+    "MES": ["US", "future", 1],
+    "ES": ["US", "future", 1],
+    "MGC": ["XAU", "future", 1],
+    "VOO": ["US", "stock", 1],
+    "QQQ": ["US", "stock", 1.3],
+    "QQQM": ["US", "stock", 1.3],
+    "UC": ["USDCNH", "future", 1],
+    "ZT": ["DV01", "future", 1.8 / 10000],
+    "ZF": ["DV01", "future", 3.8 / 10000],
+    "ZN": ["DV01", "future", 5.8 / 10000],
+    "TN": ["DV01", "future", 7.7 / 10000],
+    "ZB": ["DV01", "future", 10.8 / 10000],
+    "UB": ["DV01", "future", 16.2 / 10000],
+    "GLD": ["XAU", "stock", 1],
+    "GLDM": ["XAU", "stock", 1],
+    "BITO": ["BTC", "stock", 1],
+    "CL": ["CL", "future", 1],
+    "MA": ["US", "stock", 1],
+    "7974": ["JP", "stock", 1],
+    "1211": ["HK", "stock", 1.5],
+}
+
