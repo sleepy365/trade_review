@@ -7,6 +7,7 @@ from inputs import exposure_table,currency_table, contract_size_table, watch_lis
 import yfinance as yf
 import matplotlib.pyplot as plt
 from pathlib import Path
+
 pd.set_option('display.max_rows', 500)
 pd.set_option('display.max_columns', None)  # Show all columns
 pd.set_option('display.width', 1000)  # Increase width to fit your screen
