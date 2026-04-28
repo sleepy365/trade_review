@@ -1,11 +1,11 @@
-EXCLUSION_LIST = ["USD.HKD", "AUD.USD", "EUR.USD", "USD.CNH", "CNH.HKD", "USD.JPY", "USD.CHF", "AUD.CNH"]
+EXCLUSION_LIST = ["CL DEC'26","USD.HKD", "AUD.USD", "EUR.USD", "USD.CNH", "CNH.HKD", "USD.JPY", "USD.CHF", "AUD.CNH"]
 PLOTTING = True # this decides if get_ticker_trades() does charting
 CASH = 0 # periodically adjust this for correct NAV calculation
 
 # watchlist for daily monitoring
 watch_list = {
-    "main": ["BABA", "1211", "AMD", "NVDA", "USDCNH", "USDJPY"],
-    "fun": ["GC fut", "SI fut", "CL fut", "ES fut"]
+    "main": ["BABA", "1211", "AMD", "NVDA", "NFLX"],
+    "fun": ["GC fut", "SI fut", "CL fut", "ES fut", "USDJPY"]
 }
 # currency table is applied in contract_size_table as base currency is USD
 currency_table = {
@@ -24,6 +24,7 @@ contract_size_table = {
     "MES": 5,
     "ES": 50,
     "MGC": 10,
+    "GC": 100,
     "M2K": 5,
     "MNQ": 2,
     "SOFR3": 2500,
