@@ -1,4 +1,4 @@
-EXCLUSION_LIST = ["CL DEC'26","USD.HKD", "AUD.USD", "EUR.USD", "USD.CNH", "CNH.HKD", "USD.JPY", "USD.CHF", "AUD.CNH"]
+EXCLUSION_LIST = ["USD.HKD", "AUD.USD", "EUR.USD", "USD.CNH", "CNH.HKD", "USD.JPY", "USD.CHF", "AUD.CNH"]
 PLOTTING = True # this decides if get_ticker_trades() does charting
 CASH = 0 # periodically adjust this for correct NAV calculation
 
@@ -46,6 +46,7 @@ exposure_table = {
     "SMCI": ["US", "stock", 2],
     "U": ["US", "stock", 3],
     "APP": ["US", "stock", 3],
+    "NOW": ["US", "stock", 2],
     "TCEHY": ["HK", "stock", 1],
     "ASPI": ["US", "stock", 3],
     "9992": ["HK", "stock", 1.8],
@@ -80,5 +81,6 @@ exposure_table = {
     "MA": ["US", "stock", 1],
     "7974": ["JP", "stock", 1],
     "1211": ["HK", "stock", 1.5],
+    "700": ["HK", "stock", 1]
 }
 

@@ -132,7 +132,7 @@ def get_contract_size(contract_spec = None, currency_spec = None, ticker = ""):
     if ticker.split()[0] in contract_spec:
         contract_size = contract_spec[ticker.split()[0]]
     # contract size default for HK stocks
-    elif len(ticker) == 4 and ticker.isdigit():
+    elif len(ticker) <= 4 and ticker.isdigit():
         contract_size = 1 / currency_spec["USDHKD"]
     else:
         contract_size = 1
@@ -349,8 +349,8 @@ def get_last_price(tickers = None, precision = None):
     yf_tickers = []
     for ticker in tickers:
         # HK tickers
-        if len(ticker) == 4 and ticker.isdigit():
-            yf_tickers.append(ticker + ".HK")
+        if len(ticker) <= 4 and ticker.isdigit():
+            yf_tickers.append(ticker.zfill(4) + ".HK")
         # JP tickers
         elif ticker.endswith("TSEJ"):
             yf_tickers.append(ticker.split(" ")[0] + ".T")
