@@ -3,7 +3,7 @@ import pytz
 import pandas as pd
 import os
 from trade_counter import count_trades, get_all_trades
-from inputs import exposure_table,currency_table, contract_size_table, watch_list, EXCLUSION_LIST, PLOTTING, CASH
+from inputs import exposure_table,currency_table, contract_size_table, watch_list, EXCLUSION_LIST, CASH
 import yfinance as yf
 import matplotlib.pyplot as plt
 from pathlib import Path
@@ -379,7 +379,7 @@ def get_last_price(tickers = None, precision = None):
         print(f"\nSomething went wrong with finding last price for {yf_tickers}, defaulting to open_price")
         return None
 
-def get_ticker_trades(all_trades = pd.DataFrame(), ticker = "", make_chart = PLOTTING):
+def get_ticker_trades(all_trades = pd.DataFrame(), ticker = ""):
     """
     Takes an all_trades df and does analysis on a specific ticker, will also present a plot on exposure and pnl
     """
@@ -408,9 +408,8 @@ def get_ticker_trades(all_trades = pd.DataFrame(), ticker = "", make_chart = PLO
               f"\nTotal Scalp PL is {ticker_output_df["scalp_pnl"].iloc[-1]}"
               f"\nTotal PL is {ticker_output_df["pnl"].iloc[-1]}\n")
 
-        if make_chart:
-            # plot the PL and exposure over time
-            # Create the plot
+        if len(ticker_trades) > 10:
+            # plot the PL and exposure over time if more than 10 trades
             fig, ax1 = plt.subplots(figsize=(10, 6))
 
             # Plot total_pnl on the left y-axis (ax1)

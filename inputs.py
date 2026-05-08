@@ -1,5 +1,4 @@
 EXCLUSION_LIST = ["USD.HKD", "AUD.USD", "EUR.USD", "USD.CNH", "CNH.HKD", "USD.JPY", "USD.CHF", "AUD.CNH"]
-PLOTTING = True # this decides if get_ticker_trades() does charting
 CASH = 0 # periodically adjust this for correct NAV calculation
 
 # watchlist for daily monitoring
