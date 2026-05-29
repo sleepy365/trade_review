@@ -80,6 +80,7 @@ exposure_table = {
     "MA": ["US", "stock", 1],
     "7974": ["JP", "stock", 1],
     "1211": ["HK", "stock", 1.5],
-    "700": ["HK", "stock", 1]
+    "700": ["HK", "stock", 1],
+    "SOXX": ["US", "stock", 2],
 }
 
