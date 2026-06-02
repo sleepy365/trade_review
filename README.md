@@ -34,4 +34,5 @@ I have set a fixed exports/manual_trades.csv which the script always checks for
 # Known Issues
 1. for futures, trade_review.get_last_price() will return the last price for the active future contract 
 e.g CL=F. This means unrealised pnl based on mark-to-market prices may be off, especially for far out futures.
-2. despite setting yfinance.download() to include pre-post market data, it often only returns the main session prices.
+2. for futures, the roll email confirmation does not give enough information for position tracking. Therefore, future
+rolling trades need to be input in manual_trades.csv

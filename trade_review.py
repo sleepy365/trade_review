@@ -228,12 +228,12 @@ def analyse_trades(all_trades = pd.DataFrame(), file_location = r""):
     Groups the outputs into all_pnl which can be stored and reviewed further.
     """
     tickers = all_trades.ticker.unique()
-    tickers = [ticker for ticker in tickers if ticker not in EXCLUSION_LIST]
+    tickers = [ticker for ticker in tickers if ticker not in EXCLUSION_LIST and "-COMB" not in ticker]
 
     # first get market_data for all open positions to save api calls during mark_to_market
     open_positions = all_trades.groupby("ticker")["quantity"].sum()
     open_tickers = open_positions.loc[open_positions != 0].index.tolist()
-    open_tickers_traded = [x for x in open_tickers if x not in EXCLUSION_LIST]
+    open_tickers_traded = [x for x in open_tickers if x not in EXCLUSION_LIST and "-COMB" not in x]
     market_data = get_last_price(open_tickers_traded)
 
     ticker_outputs = []
@@ -461,7 +461,7 @@ def other_functions(all_trades = None, file_location = None):
     """
     # at the end of the routine ask the user for other things that they may want to do
     unique_tickers = all_trades["ticker"].unique()
-    unique_tickers = [x for x in unique_tickers if x not in EXCLUSION_LIST]
+    unique_tickers = [x for x in unique_tickers if x not in EXCLUSION_LIST and "-COMB" not in x]
     print(unique_tickers)
 
     function_loop = True
@@ -485,8 +485,19 @@ def other_functions(all_trades = None, file_location = None):
         # show scalp summary
         elif ticker_input == "2":
             all_pnl = pd.read_csv(file_location+r"\all_summary.csv")
-            all_pnl_light = all_pnl[["ticker", "pnl", "open_pnl", "scalp_pnl", "last_price", "timestamp"]]
-            print(all_pnl_light, f"\nScalp PL is {int(round(all_pnl_light["scalp_pnl"].sum(), 0))}")
+            all_pnl_light = all_pnl[["ticker", "pnl", "open_pnl", "scalp_pnl", "timestamp"]]
+            all_pnl_light = all_pnl_light.copy()
+            all_pnl_light["timestamp"] = pd.to_datetime(all_pnl_light["timestamp"])
+            all_pnl_light["underlying"] = all_pnl_light.apply(lambda x: x["ticker"].split(" ")[0], axis=1)
+            all_pnl_combined = all_pnl_light.groupby("underlying").agg(
+                pnl=('pnl', 'sum'),
+                open_pnl=('open_pnl', 'sum'),
+                scalp_pnl=('scalp_pnl', 'sum'),
+                timestamp=('timestamp', 'max'),
+            )
+            all_pnl_combined = all_pnl_combined.sort_values('pnl', key=lambda x: x.abs(), ascending=False)
+
+            print(all_pnl_combined, f"\nScalp PL is {int(round(all_pnl_light["scalp_pnl"].sum(), 0))}")
         # show ticker history
         elif ticker_input == "3":
             ticker_history(all_trades)

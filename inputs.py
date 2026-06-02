@@ -82,5 +82,7 @@ exposure_table = {
     "1211": ["HK", "stock", 1.5],
     "700": ["HK", "stock", 1],
     "SOXX": ["US", "stock", 2],
+    "META": ["US", "stock", 1.5],
+    "WOLF": ["US", "stock", 4],
 }
 
