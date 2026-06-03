@@ -131,9 +131,15 @@ class PositionKeeper:
 def get_contract_size(contract_spec = None, currency_spec = None, ticker = ""):
     if ticker.split()[0] in contract_spec:
         contract_size = contract_spec[ticker.split()[0]]
-    # contract size default for HK stocks
+    # hk stocks
     elif len(ticker) <= 4 and ticker.isdigit():
         contract_size = 1 / currency_spec["USDHKD"]
+    # ch stocks
+    elif len(ticker) == 6 and ticker.isdigit():
+        contract_size = 1 / currency_spec["USDCNH"]
+    # JP stocks
+    elif ticker.endswith("TSEJ"):
+        contract_size = 1 / currency_spec["USDJPY"]
     else:
         contract_size = 1
     return contract_size
@@ -351,6 +357,12 @@ def get_last_price(tickers = None, precision = None):
         # HK tickers
         if len(ticker) <= 4 and ticker.isdigit():
             yf_tickers.append(ticker.zfill(4) + ".HK")
+        # SH tickers
+        elif len(ticker) == 6 and ticker.startswith("6"):
+            yf_tickers.append(ticker + ".SS")
+        # SZ tickers
+        elif len(ticker) == 6 and ticker.startswith(("0", "3")):
+            yf_tickers.append(ticker + ".SZ")
         # JP tickers
         elif ticker.endswith("TSEJ"):
             yf_tickers.append(ticker.split(" ")[0] + ".T")

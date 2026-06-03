@@ -8,8 +8,8 @@ watch_list = {
 }
 # currency table is applied in contract_size_table as base currency is USD
 currency_table = {
-    "EURUSD": 1.18,
-    "USDCNH": 6.83,
+    "EURUSD": 1.16,
+    "USDCNH": 6.76,
     "USDHKD": 7.83,
     "USDJPY": 159,
 }
@@ -30,7 +30,6 @@ contract_size_table = {
     "GBS": 1000 * currency_table["EURUSD"],
     "UC": 100000 / currency_table["USDCNH"],
     "CL": 1000,
-    "7974": 1 / currency_table["USDJPY"]
 }
 
 # exposure table for exposure breakdown
@@ -77,12 +76,13 @@ exposure_table = {
     "GLDM": ["XAU", "stock", 1],
     "BITO": ["BTC", "stock", 1],
     "CL": ["CL", "future", 1],
-    "MA": ["US", "stock", 1],
+    "MA": ["US", "stock", 0.7],
     "7974": ["JP", "stock", 1],
     "1211": ["HK", "stock", 1.5],
     "700": ["HK", "stock", 1],
     "SOXX": ["US", "stock", 2],
     "META": ["US", "stock", 1.5],
     "WOLF": ["US", "stock", 4],
+    "600519": ["CH", "stock", 1],
 }
 
