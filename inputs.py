@@ -84,6 +84,7 @@ exposure_table = {
     "META": ["US", "stock", 1.5],
     "WOLF": ["US", "stock", 4],
     "600519": ["CH", "stock", 1],
-    "SE": ["EM", "stock", 1]
+    "SE": ["EM", "stock", 1],
+    "MSFT": ["US", "stock", 1.5],
 }
 

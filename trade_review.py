@@ -400,8 +400,17 @@ def get_ticker_trades(all_trades = pd.DataFrame(), ticker = ""):
     ticker = ticker.upper()
     if ticker in unique_tickers:
         ticker_trades = all_trades.loc[all_trades.ticker == ticker].iloc[::-1].reset_index(drop=True)
-        contract_size = ticker_trades.loc[0, "contract_size"]
+
+        # for tickers with manual trades, override the date_long to 1 day before the first real trade for better plots.
+        if 0 in ticker_trades["UID"].unique():
+            auto_trades = ticker_trades.loc[ticker_trades["UID"] != 0, "date_long"]
+            if len(auto_trades) > 0:
+                first_auto_trade = auto_trades.iloc[0]
+                ticker_trades.loc[ticker_trades["UID"] == 0, "date_long"] = first_auto_trade - pd.Timedelta(days=1)
+
+
         # initiate PositionKeeper
+        contract_size = ticker_trades.loc[0, "contract_size"]
         ticker_position = PositionKeeper(ticker, contract_size)
         # feed in trades
         ticker_output = []
