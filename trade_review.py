@@ -211,8 +211,12 @@ def manual_trades(all_trades = pd.DataFrame(), file_location = r""):
             return all_trades
         print(f"Found manual_trades.csv with {len(manual_df)} trades, injecting with UID 0")
         # add columns to fit all_trades
-        first_trade_date = all_trades["date_long"].iloc[-1]
-        manual_df["date_long"] = first_trade_date
+
+        # parse "date" column (e.g. "2026-05-25") into date_long (HKT midnight)
+        hk_tz = pytz.timezone("Asia/Hong_Kong")
+        manual_df["date_long"] = pd.to_datetime(manual_df["date"]).dt.tz_localize(hk_tz)
+        manual_df = manual_df.drop(columns=["date"])
+
         manual_df["UID"] = 0
         manual_df["contract_size"] = manual_df.apply(
             lambda x: get_contract_size(contract_size_table, currency_table, x.ticker), axis=1)
@@ -400,14 +404,6 @@ def get_ticker_trades(all_trades = pd.DataFrame(), ticker = ""):
     ticker = ticker.upper()
     if ticker in unique_tickers:
         ticker_trades = all_trades.loc[all_trades.ticker == ticker].iloc[::-1].reset_index(drop=True)
-
-        # for tickers with manual trades, override the date_long to 1 day before the first real trade for better plots.
-        if 0 in ticker_trades["UID"].unique():
-            auto_trades = ticker_trades.loc[ticker_trades["UID"] != 0, "date_long"]
-            if len(auto_trades) > 0:
-                first_auto_trade = auto_trades.iloc[0]
-                ticker_trades.loc[ticker_trades["UID"] == 0, "date_long"] = first_auto_trade - pd.Timedelta(days=1)
-
 
         # initiate PositionKeeper
         contract_size = ticker_trades.loc[0, "contract_size"]

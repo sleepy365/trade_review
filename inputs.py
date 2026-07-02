@@ -9,7 +9,7 @@ watch_list = {
 # currency table is applied in contract_size_table as base currency is USD
 currency_table = {
     "EURUSD": 1.16,
-    "USDCNH": 6.76,
+    "USDCNH": 6.80,
     "USDHKD": 7.83,
     "USDJPY": 159,
 }
@@ -30,6 +30,7 @@ contract_size_table = {
     "GBS": 1000 * currency_table["EURUSD"],
     "UC": 100000 / currency_table["USDCNH"],
     "CL": 1000,
+    "JPY": 12500000,
 }
 
 # exposure table for exposure breakdown
@@ -66,6 +67,7 @@ exposure_table = {
     "QQQ": ["US", "stock", 1.3],
     "QQQM": ["US", "stock", 1.3],
     "UC": ["USDCNH", "future", 1],
+    "JPY": ["JPYUSD", "future", 1],
     "ZT": ["DV01", "future", 1.8 / 10000],
     "ZF": ["DV01", "future", 3.8 / 10000],
     "ZN": ["DV01", "future", 5.8 / 10000],
@@ -85,6 +87,7 @@ exposure_table = {
     "WOLF": ["US", "stock", 4],
     "600519": ["CH", "stock", 1],
     "SE": ["EM", "stock", 1],
-    "MSFT": ["US", "stock", 1.5],
+    "MSFT": ["US", "stock", 1.5], 
+    "ORCL": ["US", "stock", 2],
 }
 
