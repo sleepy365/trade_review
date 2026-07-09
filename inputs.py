@@ -89,5 +89,6 @@ exposure_table = {
     "SE": ["EM", "stock", 1],
     "MSFT": ["US", "stock", 1.5], 
     "ORCL": ["US", "stock", 2],
+    "LULU": ["US", "stock", 1],
 }
 

@@ -426,31 +426,43 @@ def get_ticker_trades(all_trades = pd.DataFrame(), ticker = ""):
               f"\nTotal PL is {ticker_output_df["pnl"].iloc[-1]}\n")
 
         if len(ticker_trades) > 10:
-            # plot the PL and exposure over time if more than 10 trades
-            fig, ax1 = plt.subplots(figsize=(10, 6))
+            # Create figure with 2 subplots, sharing x-axis
+            fig, (ax_top, ax_bot) = plt.subplots(2, 1, figsize=(10, 8), sharex=True,
+                                                 gridspec_kw={'height_ratios': [3, 1]})
 
-            # Plot total_pnl on the left y-axis (ax1)
-            ax1.plot(ticker_output_df['timestamp'], ticker_output_df['pnl'], label='Total PNL', color='magenta', linewidth=2)
-            ax1.set_xlabel('Timestamp')
+            # --- Top Subplot: PnL and Exposure ---
+            ax1 = ax_top
+            ax1.plot(ticker_output_df['timestamp'], ticker_output_df['pnl'], label='Total PNL', color='magenta',
+                     linewidth=2)
             ax1.set_ylabel('PNL (USD)', color='magenta')
             ax1.tick_params(axis='y', labelcolor='magenta')
             ax1.grid(True)
-
-            # Create a second y-axis for exposure on the right
+            ax1.legend(loc='upper left')
             ax2 = ax1.twinx()
-            ax2.plot(ticker_output_df['timestamp'], ticker_output_df['pos'], label='Exposure', color='green', linewidth=2)
+            ax2.plot(ticker_output_df['timestamp'], ticker_output_df['pos'], label='Exposure', color='green',
+                     linewidth=2)
             ax2.set_ylabel('Exposure (units)', color='green')
             ax2.tick_params(axis='y', labelcolor='green')
+            ax2.legend(loc='upper right')
+            # --- Bottom Subplot: Price and Buy/Sell Trades ---
+            ax_bot.plot(ticker_trades['date_long'], ticker_trades['price'], color='gray', alpha=0.7, label='Price',
+                        zorder=1)
 
-            # Add title and legend
-            plt.title(f'{ticker}')
-            fig.legend(loc='upper center', bbox_to_anchor=(0.5, -0.05), ncol=2)
+            # Scatter buys/sells (Assuming quantity > 0 is Buy, < 0 is Sell. Flip if your convention is reversed)
+            buys = ticker_trades[ticker_trades['quantity'] > 0]
+            sells = ticker_trades[ticker_trades['quantity'] < 0]
 
-            # Rotate x-axis labels and adjust layout
-            ax1.tick_params(axis='x', rotation=45)
+            ax_bot.scatter(buys['date_long'], buys['price'], color='green', marker='^', s=60, label='Buy', zorder=3)
+            ax_bot.scatter(sells['date_long'], sells['price'], color='red', marker='v', s=60, label='Sell', zorder=3)
+
+            ax_bot.set_ylabel('Price')
+            ax_bot.set_xlabel('Timestamp')
+            ax_bot.grid(True, alpha=0.3)
+            ax_bot.legend(loc='upper left')
+            # --- Final Formatting ---
+            plt.suptitle(f'{ticker} - Trade & PnL Analysis', fontsize=14, fontweight='bold')
+            ax_bot.tick_params(axis='x', rotation=45)
             fig.tight_layout()
-
-            # Show the plot
             plt.show()
 
     else:
