@@ -11,7 +11,7 @@ currency_table = {
     "EURUSD": 1.16,
     "USDCNH": 6.80,
     "USDHKD": 7.83,
-    "USDJPY": 159,
+    "USDJPY": 163,
 }
 contract_size_table = {
     "ZT": 2000,
@@ -36,6 +36,7 @@ contract_size_table = {
 # exposure table for exposure breakdown
 exposure_table = {
     "AMD": ["US", "stock", 2.5],
+    "INTC": ["US", "stock", 2.5],
     "ASML": ["EU", "stock", 1],
     "ARM": ["US", "stock", 2.5],
     "NFLX": ["US", "stock", 1],
@@ -72,6 +73,7 @@ exposure_table = {
     "TN": ["DV01", "future", 7.7 / 10000],
     "ZB": ["DV01", "future", 10.8 / 10000],
     "UB": ["DV01", "future", 16.2 / 10000],
+    "TLT": ["DV01", "stock", 15 / 10000],
     "GLD": ["XAU", "stock", 1],
     "GLDM": ["XAU", "stock", 1],
     "CL": ["CL", "future", 1],
