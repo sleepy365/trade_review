@@ -340,7 +340,7 @@ def exposure_breakdown(open_pos = pd.DataFrame(), exposure_table = None):
     gold_exposure = exposure_df.loc[exposure_df["exposure_grp"].isin(
         ["XAU"])].notional.sum()
     cash_exposure = exposure_df.loc[exposure_df["exposure_grp"].isin(
-        ["MM fund"])].notional.sum() + CASH
+        ["MM fund", "BOND"])].notional.sum() + CASH
     net_asset_val = sum(open_summary.loc[open_summary["type"] == "stock","market_value"]) + CASH
     equity_beta = int(round(100* equity_exposure / net_asset_val,0))
     gold_beta = int(round(100* gold_exposure / net_asset_val,0))
