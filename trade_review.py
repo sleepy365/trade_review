@@ -331,6 +331,11 @@ def exposure_breakdown(open_pos = pd.DataFrame(), exposure_table = None):
             "components" : components,
         }
     )
+    net_asset_val = sum(open_summary.loc[open_summary["type"] == "stock", "market_value"]) + CASH
+    exposure_df["allocation"] = round(exposure_df["nominal"] / net_asset_val * 100,1)
+    exposure_df["allocation"] = exposure_df["allocation"].astype(str) + "%"
+    exposure_df = exposure_df.sort_values("notional", ascending=False, ignore_index=True)
+    exposure_df = exposure_df[["exposure_grp", "notional", "nominal", "allocation", "components"]]
     print("-----------------------------------------------------------")
     print(exposure_df)
 
@@ -341,7 +346,6 @@ def exposure_breakdown(open_pos = pd.DataFrame(), exposure_table = None):
         ["XAU"])].notional.sum()
     cash_exposure = exposure_df.loc[exposure_df["exposure_grp"].isin(
         ["MM fund", "BOND"])].notional.sum() + CASH
-    net_asset_val = sum(open_summary.loc[open_summary["type"] == "stock","market_value"]) + CASH
     equity_beta = int(round(100* equity_exposure / net_asset_val,0))
     gold_beta = int(round(100* gold_exposure / net_asset_val,0))
     cash_beta = int(round(100* cash_exposure / net_asset_val,0))
