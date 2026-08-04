@@ -292,9 +292,11 @@ def analyse_trades(all_trades = pd.DataFrame(), file_location = r""):
     # split into open df, sort by open_pnl and display
     open_df = all_pnl.loc[all_pnl["pos"] != 0].reset_index(drop = True)
     open_df = open_df.sort_values("open_pnl", ascending=False, ignore_index=True)
-    print(open_df, f"\nPL is {total_pnl}, {(total_pnl-total_pnl_yest):+}\n"
-                   f"Open PL is {open_pnl}, {(open_pnl-open_pnl_yest):+}\n"
-                   f"Scalp PL is {scalp_pnl}, {(scalp_pnl-scalp_pnl_yest):+}")
+    print(open_df)
+    print("-----------------------------------------------------------")
+    print(f"PL is {total_pnl}, {(total_pnl-total_pnl_yest):+}\n"
+          f"Open PL is {open_pnl}, {(open_pnl-open_pnl_yest):+}\n"
+          f"Scalp PL is {scalp_pnl}, {(scalp_pnl-scalp_pnl_yest):+}")
     return open_df
 
 
@@ -321,22 +323,31 @@ def exposure_breakdown(open_pos = pd.DataFrame(), exposure_table = None):
     components = []
     for exposure in exposure_list:
         temp = open_summary[open_summary["exposure_grp"] == exposure]
-        exposure_notional.append(round(sum(temp["market_value"]*temp["beta"]), 1))
-        exposure_nominal.append(round(sum(temp["market_value"]), 1))
+        exposure_notional.append(round(sum(temp["market_value"]*temp["beta"])))
+        exposure_nominal.append(round(sum(temp["market_value"])))
         components.append(temp["ticker"].unique())
     exposure_df = pd.DataFrame(
         {
             "exposure_grp" : exposure_list,
-            "notional" : exposure_notional,
+            "adj risk" : exposure_notional,
             "nominal" : exposure_nominal,
             "components" : components,
         }
     )
+    # compute some stats for display
     net_asset_val = sum(open_summary.loc[open_summary["type"] == "stock", "market_value"]) + CASH
+    equity_risk = exposure_df.loc[exposure_df["exposure_grp"].isin(
+        ["US", "HK", "CN", "IN", "KR", "JP"]), "adj risk"].sum()
+    market_beta = round(equity_risk / net_asset_val, 1)
+
+    # add nominal allocation into output
     exposure_df["allocation"] = round(exposure_df["nominal"] / net_asset_val * 100,1)
     exposure_df["allocation"] = exposure_df["allocation"].astype(str) + "%"
-    exposure_df = exposure_df.sort_values("notional", ascending=False, ignore_index=True)
-    exposure_df = exposure_df[["exposure_grp", "notional", "nominal", "allocation", "components"]]
+    exposure_df = exposure_df.sort_values("adj risk", ascending=False, ignore_index=True)
+    exposure_df = exposure_df[["exposure_grp", "adj risk", "nominal", "allocation", "components"]]
+
+    print("-----------------------------------------------------------")
+    print(f"NAV {net_asset_val}, EQUITY RISK {equity_risk}, SPX BETA {market_beta}")
     print("-----------------------------------------------------------")
     print(exposure_df)
     print("-----------------------------------------------------------")
