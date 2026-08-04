@@ -289,8 +289,9 @@ def analyse_trades(all_trades = pd.DataFrame(), file_location = r""):
     # save the new all_summary
     all_pnl.to_csv(file_location + r"\all_summary.csv", index=False)
 
-    # split into open df and output it
+    # split into open df, sort by open_pnl and display
     open_df = all_pnl.loc[all_pnl["pos"] != 0].reset_index(drop = True)
+    open_df = open_df.sort_values("open_pnl", ascending=False, ignore_index=True)
     print(open_df, f"\nPL is {total_pnl}, {(total_pnl-total_pnl_yest):+}\n"
                    f"Open PL is {open_pnl}, {(open_pnl-open_pnl_yest):+}\n"
                    f"Scalp PL is {scalp_pnl}, {(scalp_pnl-scalp_pnl_yest):+}")
@@ -338,19 +339,6 @@ def exposure_breakdown(open_pos = pd.DataFrame(), exposure_table = None):
     exposure_df = exposure_df[["exposure_grp", "notional", "nominal", "allocation", "components"]]
     print("-----------------------------------------------------------")
     print(exposure_df)
-
-    # compute stats about the portfolio allocation
-    equity_exposure = exposure_df.loc[exposure_df["exposure_grp"].isin(
-        ["US", "CH", "KR", "TW", "IN", "HK", "JP", "SG"])].notional.sum()
-    gold_exposure = exposure_df.loc[exposure_df["exposure_grp"].isin(
-        ["XAU"])].notional.sum()
-    cash_exposure = exposure_df.loc[exposure_df["exposure_grp"].isin(
-        ["MM fund", "BOND"])].notional.sum() + CASH
-    equity_beta = int(round(100* equity_exposure / net_asset_val,0))
-    gold_beta = int(round(100* gold_exposure / net_asset_val,0))
-    cash_beta = int(round(100* cash_exposure / net_asset_val,0))
-
-    print(f"NAV {int(round(net_asset_val,0))}, {equity_beta}% equities, {gold_beta}% gold and {cash_beta}% cash")
     print("-----------------------------------------------------------")
     return exposure_df
 
