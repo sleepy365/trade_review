@@ -338,7 +338,7 @@ def exposure_breakdown(open_pos = pd.DataFrame(), exposure_table = None):
     net_asset_val = sum(open_summary.loc[open_summary["type"] == "stock", "market_value"]) + CASH
     equity_risk = exposure_df.loc[exposure_df["exposure_grp"].isin(
         ["US", "HK", "CN", "IN", "KR", "JP"]), "adj risk"].sum()
-    market_beta = round(equity_risk / net_asset_val, 1)
+    market_beta = round(equity_risk / net_asset_val, 2)
 
     # add nominal allocation into output
     exposure_df["allocation"] = round(exposure_df["nominal"] / net_asset_val * 100,1)
