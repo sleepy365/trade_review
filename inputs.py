@@ -75,6 +75,7 @@ exposure_table = {
     "ZB": ["DV01", "future", 11.8 / 10000],
     "UB": ["DV01", "future", 16.2 / 10000],
     "TLT": ["BOND", "stock", 1],
+    "TIP": ["BOND", "stock", 1],
     "GLD": ["XAU", "stock", 1],
     "SLV": ["XAU", "stock", 2],
     "GLDM": ["XAU", "stock", 1],
