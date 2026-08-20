@@ -312,6 +312,16 @@ def exposure_breakdown(open_pos = pd.DataFrame(), exposure_table = None):
         open_summary["exposure_grp"] = open_summary.apply(lambda x: exposure_table.get(x.ticker.split()[0])[0], axis=1)
         open_summary["type"] = open_summary.apply(lambda x: exposure_table.get(x.ticker.split()[0])[1], axis=1)
         open_summary["beta"] = open_summary.apply(lambda x: exposure_table.get(x.ticker.split()[0])[2], axis=1)
+
+        # create stock allocations
+        allocation_summary = open_summary.loc[open_summary["type"] == "stock"].copy()
+        allocation_summary = allocation_summary.sort_values("market_value", ascending=False, ignore_index=True)
+        allocation_summary = allocation_summary[["ticker", "market_value"]]
+        net_asset_val = sum(allocation_summary["market_value"]) + CASH
+        allocation_summary["market_value"] = allocation_summary["market_value"] / net_asset_val * 100
+        allocation_summary["market_value"] = allocation_summary["market_value"].round(1)
+        allocation_summary.columns = [["Ticker", "Allocation (%)"]]
+
     except TypeError:
         missing_tickers = [x.split()[0] for x in open_summary.ticker if x.split()[0] not in exposure_table.keys()]
         print(f"{missing_tickers} not in exposure_table, fix to see exposure breakdown")
@@ -335,7 +345,6 @@ def exposure_breakdown(open_pos = pd.DataFrame(), exposure_table = None):
         }
     )
     # compute some stats for display
-    net_asset_val = sum(open_summary.loc[open_summary["type"] == "stock", "market_value"]) + CASH
     equity_risk = exposure_df.loc[exposure_df["exposure_grp"].isin(
         ["US", "HK", "CN", "IN", "KR", "JP"]), "adj risk"].sum()
     market_beta = round(equity_risk / net_asset_val, 2)
@@ -351,7 +360,7 @@ def exposure_breakdown(open_pos = pd.DataFrame(), exposure_table = None):
     print("-----------------------------------------------------------")
     print(exposure_df)
     print("-----------------------------------------------------------")
-    return exposure_df
+    return allocation_summary
 
 def get_last_price(tickers = None, precision = None):
     """
@@ -487,7 +496,7 @@ def show_watchlist(used_watchlist = None):
     print("-----------------------------------------------------------")
 
 
-def other_functions(all_trades = None, file_location = None):
+def other_functions(all_trades = pd.DataFrame(), allocation = pd.DataFrame(), file_location = None):
     """
     This function runs at the end of the program, giving the user a few extra functions to review their trades.
     """
@@ -505,7 +514,8 @@ def other_functions(all_trades = None, file_location = None):
             "\t2 to see trade summary per ticker\n"
             "\t3 to see history of tickers traded\n"
             "\t4 to see last 30 trades\n"
-            "\t5 to refresh the script\n"
+            "\t5 to see allocations\n"
+            "\t6 to refresh the script\n"
         )
         # no command was given so exit
         if ticker_input == "":
@@ -536,7 +546,11 @@ def other_functions(all_trades = None, file_location = None):
         # show last 30 trades
         elif ticker_input == "4":
             print(all_trades.head(30))
+        # show stock allocations computed in exposure_breakdown()
         elif ticker_input == "5":
+            print(allocation)
+        # rerun script
+        elif ticker_input == "6":
             main()
         # show trades for a specific ticker
         else:
@@ -546,14 +560,15 @@ def other_functions(all_trades = None, file_location = None):
 
 def main():
     export_location = EXPORT_FOLDER
+
     # perform all the analytics
     raw_trades = get_all_trades()
     clean_trades = store_trades(raw_trades, export_location)
     all_trades = manual_trades(clean_trades, export_location)
     open_summary = analyse_trades(all_trades, export_location)
-    exposure_df = exposure_breakdown(open_summary, exposure_table)
+    allocation_summary = exposure_breakdown(open_summary, exposure_table)
     show_watchlist(watch_list)
-    other_functions(all_trades, export_location)
+    other_functions(all_trades, allocation_summary, export_location)
 
 if __name__ in "__main__":
     main()
