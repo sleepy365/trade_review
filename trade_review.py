@@ -293,7 +293,7 @@ def analyse_trades(all_trades = pd.DataFrame(), file_location = r""):
     open_df = all_pnl.loc[all_pnl["pos"] != 0].reset_index(drop = True)
     open_df = open_df.sort_values("open_pnl", ascending=False, ignore_index=True)
     print(open_df)
-    print("-----------------------------------------------------------")
+    print("----------------------------------------------------------------------------------------------------------")
     print(f"PL is {total_pnl}, {(total_pnl-total_pnl_yest):+}\n"
           f"Open PL is {open_pnl}, {(open_pnl-open_pnl_yest):+}\n"
           f"Scalp PL is {scalp_pnl}, {(scalp_pnl-scalp_pnl_yest):+}")
@@ -355,11 +355,11 @@ def exposure_breakdown(open_pos = pd.DataFrame(), exposure_table = None):
     exposure_df = exposure_df.sort_values("adj risk", ascending=False, ignore_index=True)
     exposure_df = exposure_df[["exposure_grp", "adj risk", "nominal", "allocation", "components"]]
 
-    print("-----------------------------------------------------------")
+    print("----------------------------------------------------------------------------------------------------------")
     print(f"NAV {net_asset_val}, EQUITY RISK {equity_risk}, SPX BETA {market_beta}")
-    print("-----------------------------------------------------------")
+    print("----------------------------------------------------------------------------------------------------------")
     print(exposure_df)
-    print("-----------------------------------------------------------")
+    print("----------------------------------------------------------------------------------------------------------")
     return allocation_summary
 
 def get_last_price(tickers = None, precision = None):
@@ -493,7 +493,7 @@ def ticker_history(all_trades = pd.DataFrame()):
 def show_watchlist(used_watchlist = None):
     for custom_list in used_watchlist.keys():
         print(f"{custom_list}", get_last_price(used_watchlist.get(custom_list), 3))
-    print("-----------------------------------------------------------")
+    print("----------------------------------------------------------------------------------------------------------")
 
 
 def other_functions(all_trades = pd.DataFrame(), allocation = pd.DataFrame(), file_location = None):
