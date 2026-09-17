@@ -36,6 +36,7 @@ contract_size_table = {
 # exposure table for exposure breakdown
 exposure_table = {
     "AMD": ["US", "stock", 2.5],
+    "QCOM": ["US", "stock", 1.5],
     "INTC": ["US", "stock", 2.5],
     "ASML": ["EU", "stock", 1],
     "ARM": ["US", "stock", 2.5],
