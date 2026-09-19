@@ -132,10 +132,10 @@ def get_contract_size(contract_spec = None, currency_spec = None, ticker = ""):
     if ticker.split()[0] in contract_spec:
         contract_size = contract_spec[ticker.split()[0]]
     # hk stocks
-    elif len(ticker) <= 4 and ticker.isdigit():
+    elif ticker.endswith("SEHK"):
         contract_size = 1 / currency_spec["USDHKD"]
     # ch stocks
-    elif len(ticker) == 6 and ticker.isdigit():
+    elif ticker.endswith("SEHKNTL"):
         contract_size = 1 / currency_spec["USDCNH"]
     # JP stocks
     elif ticker.endswith("TSEJ"):
@@ -162,7 +162,7 @@ def store_trades(raw_trades = pd.DataFrame(), file_location = None):
         subject = row.loc["Subject"]
 
         subject_split = subject.split()
-        first_at_index = next(i for i, item in enumerate(subject_split) if '@' in item)
+        first_at_index = subject_split.index("@")
         quantity = round((1 if subject_split[0] == "BOUGHT" else -1) * float(subject_split[1].replace(",","")),0)
         ticker = ''
         for x in range(2, first_at_index):
@@ -362,17 +362,40 @@ def exposure_breakdown(open_pos = pd.DataFrame(), exposure_table = None):
     print("----------------------------------------------------------------------------------------------------------")
     return allocation_summary
 
+def resolve_future_yf(symbol):
+    # ZB DEC'26 @CBOT
+    EXC_MAP = {
+        "CBOT": ".CBT",
+        "COMEX": ".CMX",
+        "NYMEX": ".NYM",
+        "CME": ".CME"
+
+    }
+    CAL_MAP = {
+        "JAN": "F", "FEB": "G", "MAR": "H", "APR": "J",
+        "MAY": "K", "JUN": "M", "JUL": "N", "AUG": "Q",
+        "SEP": "U", "OCT": "V", "NOV": "X", "DEC": "Z",
+    }
+    sym_split = symbol.split(" ")
+    if len(sym_split) == 3:
+        yf_symbol = sym_split[0] + CAL_MAP.get(sym_split[1][0:3]) + sym_split[1][-2:] + EXC_MAP.get(sym_split[2][1:])
+    else:
+        print(f"{symbol} not resolved")
+        return None
+    return yf_symbol
+
+
 def get_last_price(tickers = None, precision = None):
     """
     Wrapper of yfinance func yf.download to extract the last traded price of a set of tickers
-    get_last_price(["BABA", "9988", "CL Jul'25", "USDCNH"])
+    get_last_price(["BABA", "9988", "ZB DEC'26 @CBOT", "USDCNH"])
     """
 
     yf_tickers = []
     for ticker in tickers:
         # HK tickers
-        if len(ticker) <= 4 and ticker.isdigit():
-            yf_tickers.append(ticker.zfill(4) + ".HK")
+        if ticker.endswith("SEHK"):
+            yf_tickers.append(ticker.split(" ")[0].zfill(4) + ".HK")
         # SH tickers
         elif len(ticker) == 6 and ticker.startswith("6"):
             yf_tickers.append(ticker + ".SS")
@@ -384,7 +407,8 @@ def get_last_price(tickers = None, precision = None):
             yf_tickers.append(ticker.split(" ")[0] + ".T")
         # futs will be resolved to the generic active future
         elif " " in ticker:
-            yf_tickers.append(ticker.split()[0] + "=F")
+            # ticker is a future and must be resolved
+            yf_tickers.append(resolve_future_yf(ticker))
         # spot currency
         elif ticker[:3] == "USD" and len(ticker) == 6:
             yf_tickers.append(ticker + "=X")

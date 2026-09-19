@@ -3,8 +3,8 @@ CASH = 0 # periodically adjust this for correct NAV calculation
 
 # watchlist for daily monitoring
 watch_list = {
-    "main": ["BABA", "1211", "AMD", "NVDA", "NFLX"],
-    "fun": ["GC fut", "SI fut", "CL fut", "ES fut", "USDJPY"]
+    "stocks": ["BABA", "1211 @SEHK", "AMD", "NVDA", "NFLX", "SOXX", "IGV"],
+    "futs": ["GC DEC'26 @COMEX", "CL DEC'26 @NYMEX"]
 }
 # currency table is applied in contract_size_table as base currency is USD
 currency_table = {
