@@ -388,7 +388,7 @@ def resolve_future_yf(symbol):
 def get_last_price(tickers = None, precision = None):
     """
     Wrapper of yfinance func yf.download to extract the last traded price of a set of tickers
-    get_last_price(["BABA", "9988", "ZB DEC'26 @CBOT", "USDCNH"])
+    get_last_price(["BABA", "9988 @SEHK", "ZB DEC'26 @CBOT", "USDCNH"])
     """
 
     yf_tickers = []
@@ -397,11 +397,11 @@ def get_last_price(tickers = None, precision = None):
         if ticker.endswith("SEHK"):
             yf_tickers.append(ticker.split(" ")[0].zfill(4) + ".HK")
         # SH tickers
-        elif len(ticker) == 6 and ticker.startswith("6"):
-            yf_tickers.append(ticker + ".SS")
+        elif ticker.endswith("SEHKNTL") and ticker.startswith("6"):
+            yf_tickers.append(ticker.split(" ")[0] + ".SS")
         # SZ tickers
-        elif len(ticker) == 6 and ticker.startswith(("0", "3")):
-            yf_tickers.append(ticker + ".SZ")
+        elif ticker.endswith("SEHKNTL") and ticker.startswith(("0", "3")):
+            yf_tickers.append(ticker.split(" ")[0] + ".SZ")
         # JP tickers
         elif ticker.endswith("TSEJ"):
             yf_tickers.append(ticker.split(" ")[0] + ".T")
