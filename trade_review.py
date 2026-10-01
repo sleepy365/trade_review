@@ -3,7 +3,7 @@ import pytz
 import pandas as pd
 import os
 from trade_counter import count_trades, get_all_trades
-from inputs import exposure_table,currency_table, contract_size_table, watch_list, EXCLUSION_LIST, CASH
+from inputs import exposure_table,currency_table, contract_size_table, watch_list, EXCLUSION_LIST
 import yfinance as yf
 import matplotlib.pyplot as plt
 from pathlib import Path
@@ -317,7 +317,7 @@ def exposure_breakdown(open_pos = pd.DataFrame(), exposure_table = None):
         allocation_summary = open_summary.loc[open_summary["type"] == "stock"].copy()
         allocation_summary = allocation_summary.sort_values("market_value", ascending=False, ignore_index=True)
         allocation_summary = allocation_summary[["ticker", "market_value"]]
-        net_asset_val = sum(allocation_summary["market_value"]) + CASH
+        net_asset_val = sum(allocation_summary["market_value"])
         allocation_summary["market_value"] = allocation_summary["market_value"] / net_asset_val * 100
         allocation_summary["market_value"] = allocation_summary["market_value"].round(1)
         allocation_summary.columns = [["Ticker", "Allocation (%)"]]
