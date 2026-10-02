@@ -438,7 +438,17 @@ def get_ticker_trades(all_trades = pd.DataFrame(), ticker = ""):
     unique_tickers = all_trades["ticker"].unique()
     # first try to resolve the ticker
     ticker = ticker.upper()
+
+    if ticker not in unique_tickers:
+        # try to resolve futs without exchange
+        for sym in unique_tickers:
+            sym_split = sym.split("@")[0].strip()
+            if sym_split == ticker:
+                ticker = sym
+                break
+
     if ticker in unique_tickers:
+
         ticker_trades = all_trades.loc[all_trades.ticker == ticker].iloc[::-1].reset_index(drop=True)
 
         # initiate PositionKeeper
@@ -500,9 +510,9 @@ def get_ticker_trades(all_trades = pd.DataFrame(), ticker = ""):
             ax_bot.tick_params(axis='x', rotation=45)
             fig.tight_layout()
             plt.show()
-
     else:
-        print("Ticker not in unique tickers")
+        print("ticker not in unique tickers")
+
     return
 
 def ticker_history(all_trades = pd.DataFrame()):
